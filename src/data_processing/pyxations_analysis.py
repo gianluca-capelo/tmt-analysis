@@ -4,7 +4,7 @@ from src import config
 
 pyx.dataset_to_bids(
     target_folder_path=config.DATA_DIR,
-    files_folder_path=config.PATIENTS_DATA_DIR,
+    files_folder_path=config.FILTERED_DATA_DIR,
     dataset_name=config.PYXATIONS_PATIENTS_DATASET_NAME,
 )
 

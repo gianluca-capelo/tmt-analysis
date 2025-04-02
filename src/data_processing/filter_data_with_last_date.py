@@ -7,7 +7,7 @@ from src import config
 # Directorio donde están actualmente los archivos
 DATA_DIR = config.RAW_DATA_DIR
 
-OUTPUT_DIR = "data/patients_data_filtered"
+OUTPUT_DIR = config.FILTERED_DATA_DIR
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 

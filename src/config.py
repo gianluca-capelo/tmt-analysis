@@ -14,7 +14,8 @@ PATIENTS_DATA_DIR = os.path.join(DATA_DIR, "patients_data")
 PYXATIONS_PATIENTS_DATASET_NAME = "patients_data_pyxations"
 PYXATIONS_PATIENTS_DATA_DIR = os.path.join(DATA_DIR, PYXATIONS_PATIENTS_DATASET_NAME)
 
-RAW_DATA_DIR = os.path.join(DATA_DIR, "patients_data_pyxations_derivatives")
+RAW_DATA_DIR = os.path.join(DATA_DIR, "patients_data-20241125T131325Z-001", "patients_data")
+FILTERED_DATA_DIR = os.path.join(DATA_DIR, "patients_data_filtered")
 LOGGING_CONFIG = {
     'level': 'INFO',
     'format': '%(asctime)s - %(levelname)s - %(message)s'
