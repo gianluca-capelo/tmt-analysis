@@ -1,6 +1,9 @@
 import pyxations as pyx
 
 from src import config
+from src.data_processing.filter_data_with_last_date import filter_data_with_last_date
+
+filter_data_with_last_date()
 
 pyx.dataset_to_bids(
     target_folder_path=config.DATA_DIR,
@@ -17,4 +20,3 @@ pyx.compute_derivatives_for_dataset(
     overwrite=True,
     dataset_format="eyelink"
 )
-
