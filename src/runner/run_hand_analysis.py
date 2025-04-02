@@ -31,7 +31,7 @@ if __name__ == "__main__":
     points = config.CONSECUTIVE_POINTS
 
     analysis = load_tmt_analysis(
-        dataset_path=config.RAW_DATA_FOLDER,
+        dataset_path=config.PYXATIONS_PATIENTS_DATA_DIR,
         output_path=config.HAND_ANALYSIS_FOLDER,
         correct_targets_minimum=threshold,
         consecutive_points=points,
