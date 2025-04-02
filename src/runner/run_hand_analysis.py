@@ -3,7 +3,7 @@ import logging
 from neurotask.tmt.tmt_analyzer import TMTAnalyzer
 
 from src import config
-from .mapper.psychopy_mapper import PsychopyTMTMapper
+from src.mapper.psychopy_mapper import PsychopyTMTMapper
 
 
 def load_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consecutive_points, cut_criteria):
@@ -26,10 +26,9 @@ def load_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consec
 
 if __name__ == "__main__":
     # Cargamos el análisis de TMT
-    with_cut = False
-    threshold = config.CORRECT_THRESHOLD if with_cut else None
+    threshold = config.CORRECT_THRESHOLD
+    cut_criteria = "MINIMUM_TARGETS" if threshold else None
     points = config.CONSECUTIVE_POINTS
-    cut_criteria = "MINIMUM_TARGETS" if with_cut else None
 
     analysis = load_tmt_analysis(
         dataset_path=config.RAW_DATA_FOLDER,
