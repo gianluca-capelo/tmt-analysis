@@ -1,0 +1,48 @@
+import logging
+
+from neurotask.tmt.tmt_analyzer import TMTAnalyzer
+
+from src import config
+from .mapper.psychopy_mapper import PsychopyTMTMapper
+
+
+def load_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consecutive_points, cut_criteria):
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    )
+
+    hand_analysis = TMTAnalyzer(
+        mapper=PsychopyTMTMapper(),
+        dataset_path=dataset_path,
+        output_path=output_path,
+        correct_targets_minimum=correct_targets_minimum,
+        consecutive_points=consecutive_points
+    )
+
+    hand_analysis.run(correct_targets_minimum, consecutive_points, cut_criteria=cut_criteria)
+    return hand_analysis
+
+
+if __name__ == "__main__":
+    # Cargamos el análisis de TMT
+    with_cut = False
+    threshold = config.CORRECT_THRESHOLD if with_cut else None
+    points = config.CONSECUTIVE_POINTS
+    cut_criteria = "MINIMUM_TARGETS" if with_cut else None
+
+    analysis = load_tmt_analysis(
+        dataset_path=config.RAW_DATA_FOLDER,
+        output_path=config.HAND_ANALYSIS_FOLDER,
+        correct_targets_minimum=threshold,
+        consecutive_points=points,
+        cut_criteria=cut_criteria
+    )
+
+    # Obtenemos el DataFrame de métricas
+    df_metrics = analysis.get_metrics_dataframe()
+    print("Metrics DataFrame:")
+    print(df_metrics.head())
+
+    experiment = analysis.experiment
+    print(f"Len of subjects: {len(experiment.subjects)}")
