@@ -2,15 +2,8 @@ import os
 import re
 import shutil
 
-from src import config
 
-
-def filter_data_with_last_date():
-    # Directorio donde están actualmente los archivos
-    data_dir = config.RAW_DATA_DIR
-
-    output_dir = config.FILTERED_DATA_DIR
-
+def filter_data_with_last_date(data_dir, output_dir):
     os.makedirs(output_dir, exist_ok=True)
 
     # Expresión regular para extraer:

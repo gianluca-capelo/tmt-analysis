@@ -3,11 +3,14 @@ import pyxations as pyx
 from src import config
 from src.data_processing.filter_data_with_last_date import filter_data_with_last_date
 
-filter_data_with_last_date()
+data_dir = config.RAW_DATA_DIR
+filtered_data_dir = config.FILTERED_DATA_DIR
+
+filter_data_with_last_date(data_dir, filtered_data_dir)
 
 pyx.dataset_to_bids(
-    target_folder_path=config.DATA_DIR,
-    files_folder_path=config.FILTERED_DATA_DIR,
+    target_folder_path=data_dir,
+    files_folder_path=filtered_data_dir,
     dataset_name=config.PYXATIONS_PATIENTS_DATASET_NAME,
 )
 
