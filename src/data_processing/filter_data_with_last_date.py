@@ -7,11 +7,11 @@ from src import config
 
 def filter_data_with_last_date():
     # Directorio donde están actualmente los archivos
-    DATA_DIR = config.RAW_DATA_DIR
+    data_dir = config.RAW_DATA_DIR
 
-    OUTPUT_DIR = config.FILTERED_DATA_DIR
+    output_dir = config.FILTERED_DATA_DIR
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
 
     # Expresión regular para extraer:
     #  - subjectId (uno o más dígitos)
@@ -62,9 +62,9 @@ def filter_data_with_last_date():
         # 5) Parseamos con datetime.strptime
         return datetime.strptime(final_str, "%Y-%m-%d %H:%M:%S.%f")
 
-    # 1) Recorremos todos los archivos en DATA_DIR y determinamos la última fecha por sujeto
-    for file_name in os.listdir(DATA_DIR):
-        file_path = os.path.join(DATA_DIR, file_name)
+    # 1) Recorremos todos los archivos en data_dir y determinamos la última fecha por sujeto
+    for file_name in os.listdir(data_dir):
+        file_path = os.path.join(data_dir, file_name)
         if not os.path.isfile(file_path):
             continue  # omitimos directorios o cosas no deseadas
 
@@ -102,7 +102,7 @@ def filter_data_with_last_date():
     for subject_id, (latest_dt, file_list) in latest_records.items():
         for fpath in file_list:
             fname = os.path.basename(fpath)
-            out_path = os.path.join(OUTPUT_DIR, fname)
+            out_path = os.path.join(output_dir, fname)
             shutil.copy2(fpath, out_path)
             print(f"Copiado: {fpath} -> {out_path}")
 
