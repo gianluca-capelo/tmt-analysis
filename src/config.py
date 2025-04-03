@@ -2,12 +2,13 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-HAND_ANALYSIS_FOLDER = os.path.join(BASE_DIR, "data", "hand_analysis")
-HAND_ANALYSIS_CSV = os.path.join(BASE_DIR, "data", "hand_analysis", "metrics.csv")
-
-METADATA_CSV = os.path.join(BASE_DIR, "data", "metadata.csv")
-
 DATA_DIR = os.path.join(BASE_DIR, "data")
+
+HAND_ANALYSIS_FOLDER = os.path.join(DATA_DIR, "hand_analysis")
+HAND_ANALYSIS_CSV = os.path.join(DATA_DIR, "hand_analysis", "metrics.csv")
+
+METADATA_CSV = os.path.join(DATA_DIR, "metadata", "metadata.csv")
+
 PATIENTS_DATA_DIR = os.path.join(DATA_DIR, "patients_data")
 PYXATIONS_PATIENTS_DATASET_NAME = "patients_data_pyxations"
 PYXATIONS_PATIENTS_DATA_DIR = os.path.join(DATA_DIR, PYXATIONS_PATIENTS_DATASET_NAME)
