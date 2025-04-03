@@ -11,6 +11,9 @@ def add_metadata_to_metrics(metrics: pd.DataFrame) -> pd.DataFrame:
     df = pd.read_csv(config.METADATA_CSV)
     metadata_df = process_metadata(df)
 
+    # Remove metadata columns from the metrics DataFrame
+    metrics = metrics.drop(columns=["age", "gender"])
+
     merged_df = pd.merge(metrics, metadata_df, on='subject_id', how='inner')
 
     return merged_df

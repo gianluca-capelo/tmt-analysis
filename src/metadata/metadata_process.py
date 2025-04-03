@@ -2,9 +2,11 @@ import pandas as pd
 
 
 def process_metadata(metadata_df: pd.DataFrame):
-    metadata_df = metadata_df[metadata_df['Nro de participante'] != 'Control = ']
-    metadata_df = metadata_df[metadata_df['Nro de participante'] != 'Caso = ']
-    process_df = (metadata_df.rename(
+    # These columns are not needed, there are summary columns
+    process_df = metadata_df[metadata_df['Nro de participante'] != 'Control = ']
+    process_df = process_df[metadata_df['Nro de participante'] != 'Caso = ']
+
+    process_df = (process_df.rename(
         columns={
             "Nro de participante": "subject_id",
             "Género": "sex",
