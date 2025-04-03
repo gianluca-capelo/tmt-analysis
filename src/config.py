@@ -26,8 +26,6 @@ RADIUS_HEIGHT = 0.05
 CORRECT_THRESHOLD = None
 CONSECUTIVE_POINTS = 5
 
-DROP_SUBJECTS_BY_EYE_VALIDATION = False
-
 # Subjects classification
 SUBJECT_GROUP = {**{i: "control" for i in
                     [1, 2, 6, 7, 10, 14, 18, 21, 22, 23, 26, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 43,

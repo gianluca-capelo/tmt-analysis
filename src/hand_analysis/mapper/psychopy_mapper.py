@@ -8,7 +8,6 @@ from neurotask.tmt.metrics import calculate_distance
 from neurotask.tmt.model.tmt_model import *
 
 from src import config
-from src.mapper.eye_validation import gather_valid_subjects
 
 
 def mock_personal_info():
@@ -30,11 +29,10 @@ class PsychopyTMTMapper(TMTMapper):
 
         experiment = pyx.Experiment(dataset_path=data_path)
 
-        valid_subjects = gather_valid_subjects(experiment) if config.DROP_SUBJECTS_BY_EYE_VALIDATION else \
-            [str(subject.subject_id) for subject in experiment.subjects]
+        subject_ids_list = [str(subject.subject_id) for subject in experiment.subjects]
 
         # Convert subject_ids to strings and fill with zeros for BIDS standard
-        subject_ids = [str(s).zfill(4) for s in valid_subjects]
+        subject_ids = [str(s).zfill(4) for s in subject_ids_list]
 
         experiment = self.map_experiment(experiment, subject_ids)
 
