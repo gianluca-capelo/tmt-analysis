@@ -64,9 +64,6 @@ class PsychopyTMTMapper(TMTMapper):
             session = experiment[experiment_index].sessions[0]
             session.load_data("eyelink")
 
-            rejected_trials = self.get_rejected_trials()
-            session = self.filter_fixations(session, rejected_trials=rejected_trials)
-
             # Extract behavior data
             df_psychopy = session.behavior_data.iloc[1:-1].reset_index(drop=True)
             # Map (posArrayX, posArrayY) to a trial_id using config.trial_id_map
@@ -80,6 +77,7 @@ class PsychopyTMTMapper(TMTMapper):
             subject_trials = self.map_to_tmt_trials(df_psychopy)
 
             # Discard trials whose `order_of_appearance` is in rejected_trials
+            rejected_trials = self.get_rejected_trials()
             valid_subject_trials = [
                 trial for trial in subject_trials
                 if trial.order_of_appearance not in rejected_trials
@@ -182,32 +180,6 @@ class PsychopyTMTMapper(TMTMapper):
 
     def determine_trial_type(self, targets: List[str]) -> TrialType:
         return TrialType.PART_B if "A" in targets else TrialType.PART_A
-
-    def filter_fixations(self, session, min_fix_dur=50, max_fix_dur=1000, rejected_trials=None):
-        """Filter fixation data by duration and bad data exclusion.
-
-        Args:
-            session: The session object.
-            min_fix_dur: The minimum fixation duration (in ms).
-            max_fix_dur: The maximum fixation duration (in ms).
-            rejected_trials: A list of trial numbers to exclude from the fixation data.
-        """
-        # TODO GUS: chequear si es necesario este filtrado
-
-        fixations = session.fix
-
-        if rejected_trials:
-            fixations = fixations[~fixations["trial_number"].isin(rejected_trials)]
-
-        filtered_fixations = fixations.loc[
-            (fixations["duration"] > min_fix_dur)
-            & (fixations["duration"] < max_fix_dur)
-            & (fixations["bad"] == False)
-            ]
-
-        session.fix = filtered_fixations
-
-        return session
 
 
 def calculate_first_target_hit(cursor_trail: List[CursorInfo], stimuli: List[TMTTarget], target_radius: float) -> \
