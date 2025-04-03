@@ -24,7 +24,7 @@ def load_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consec
     return hand_analysis
 
 
-def main():
+def run_analysis_with_default_parameters():
     # Cargamos el análisis de TMT
     threshold = config.CORRECT_THRESHOLD
     cut_criteria = "MINIMUM_TARGETS" if threshold else None
@@ -46,5 +46,7 @@ def main():
     experiment = analysis.experiment
     print(f"Len of subjects: {len(experiment.subjects)}")
 
+    return analysis
+
 if __name__ == "__main__":
-    main()
+    run_analysis_with_default_parameters()
