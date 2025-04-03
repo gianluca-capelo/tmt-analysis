@@ -3,7 +3,7 @@ import logging
 from neurotask.tmt.tmt_analyzer import TMTAnalyzer
 
 from src import config
-from src.mapper.psychopy_mapper import PsychopyTMTMapper
+from src.hand_analysis.mapper.psychopy_mapper import PsychopyTMTMapper
 
 
 def load_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consecutive_points, cut_criteria):
@@ -24,7 +24,7 @@ def load_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consec
     return hand_analysis
 
 
-if __name__ == "__main__":
+def main():
     # Cargamos el análisis de TMT
     threshold = config.CORRECT_THRESHOLD
     cut_criteria = "MINIMUM_TARGETS" if threshold else None
@@ -45,3 +45,6 @@ if __name__ == "__main__":
 
     experiment = analysis.experiment
     print(f"Len of subjects: {len(experiment.subjects)}")
+
+if __name__ == "__main__":
+    main()
