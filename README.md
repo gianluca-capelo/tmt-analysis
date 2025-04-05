@@ -19,20 +19,20 @@ Follow these steps to run the analysis:
 
 ## Metadata
 
-Must define the following variables in `config.py`: METADATA_CSV.
-This should be the path to the metadata CSV file.
+Before running the project, make sure you define the following variable in `config.py`:
+
+- **METADATA_CSV**: The full path to your metadata CSV file.
+
+For example:
+
+    METADATA_CSV = os.path.join(DATA_DIR, "metadata", "metadata.csv")
 
 ## Dependencies
 
-Must install the dependencies listed in `requirements.txt`. You can do this by running:
+To install all required dependencies, run:
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+    pip install -r requirements.txt
 
-Keep in mind that _pyxations_ and _neurotask_ are still in development, so to install the latest version, you should
-directly install from the GitHub repository of each package, using the following command:
-
-   ```bash
-   pip install -e .
-   ```
+> **Note:** Both _pyxations_ and _neurotask_ are actively under development. To ensure you are using the latest version
+> of these packages, install them directly from their GitHub repositories using:
+> _**pip install -e**_ .
