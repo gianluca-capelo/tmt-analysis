@@ -113,7 +113,7 @@ class PsychopyTMTMapper(TMTMapper):
                 cursor_trial = self.map_to_cursor_trail(row)
                 first_hit = calculate_first_target_hit(cursor_trial, stimuli, config.RADIUS_HEIGHT)
                 trial = TMTTrial(
-                    order_of_appearance=row["trial_id"],
+                    order_of_appearance=index,
                     id=row["trial_id"],
                     rt=self.calculate_rt(row),
                     stimuli=stimuli,
