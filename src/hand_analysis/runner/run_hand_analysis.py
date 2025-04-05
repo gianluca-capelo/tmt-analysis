@@ -15,9 +15,7 @@ def load_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consec
     hand_analysis = TMTAnalyzer(
         mapper=PsychopyTMTMapper(),
         dataset_path=dataset_path,
-        output_path=output_path,
-        correct_targets_minimum=correct_targets_minimum,
-        consecutive_points=consecutive_points
+        output_path=output_path
     )
 
     hand_analysis.run(correct_targets_minimum, consecutive_points, cut_criteria=cut_criteria)
@@ -47,6 +45,7 @@ def run_analysis_with_default_parameters():
     print(f"Len of subjects: {len(experiment.subjects)}")
 
     return analysis
+
 
 if __name__ == "__main__":
     run_analysis_with_default_parameters()
