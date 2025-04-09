@@ -13,9 +13,10 @@ Follow these steps to run the analysis:
 
 3. **Run the Analysis:**
    Run the following command from the root directory to execute the hand analysis. The results will be saved in
-   HAND_ANALYSIS_CSV variable in `config.py`:
+   ANALYSIS_PATH variable in `config.py`:
    ```bash
-   python -m src.runner.hand_analysis.run_hand_analysis
+   python -m src.hand_analysis.loader.analysis_loader
+   
 
 ## Metadata
 
