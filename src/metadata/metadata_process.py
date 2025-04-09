@@ -37,5 +37,7 @@ def extracted_columns():
 
 
 # Esto solo lo hacemos porque asi lo tenemos en las metricas
-def convert_subject_id(subject_id: str) -> str:
+def convert_subject_id(subject_id: str|int) -> str:
+    if isinstance(subject_id, int):
+        subject_id = str(subject_id)
     return subject_id.zfill(4)
