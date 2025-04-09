@@ -5,7 +5,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 HAND_ANALYSIS_FOLDER = os.path.join(DATA_DIR, "hand_analysis")
-HAND_ANALYSIS_CSV = os.path.join(DATA_DIR, "hand_analysis", "raw_metrics.csv")
 
 ANALYSIS_PATH = os.path.join(DATA_DIR, "hand_analysis", "analysis.csv")
 METADATA_CSV = os.path.join(DATA_DIR, "metadata", "metadata.csv")
