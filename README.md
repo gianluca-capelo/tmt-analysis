@@ -16,7 +16,7 @@ Follow these steps to run the analysis:
    ANALYSIS_PATH variable in `config.py`:
    ```bash
    python -m src.hand_analysis.loader.analysis_loader
-   
+    ```
 
 ## Metadata
 
