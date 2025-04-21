@@ -9,6 +9,10 @@ HAND_ANALYSIS_FOLDER = os.path.join(DATA_DIR, "hand_analysis")
 ANALYSIS_PATH = os.path.join(DATA_DIR, "hand_analysis", "analysis.csv")
 METADATA_CSV = os.path.join(DATA_DIR, "metadata", "metadata.csv")
 
+TRAIN_SET_PATH =  os.path.join(DATA_DIR, "hand_analysis", "train_set.csv")
+EVAL_SET_PATH =  os.path.join(DATA_DIR, "hand_analysis", "eval_set.csv")
+
+
 PATIENTS_DATA_DIR = os.path.join(DATA_DIR, "patients_data")
 PYXATIONS_PATIENTS_DATASET_NAME = "patients_data_pyxations"
 PYXATIONS_PATIENTS_DATA_DIR = os.path.join(DATA_DIR, PYXATIONS_PATIENTS_DATASET_NAME)
