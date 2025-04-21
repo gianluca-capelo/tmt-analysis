@@ -1,6 +1,7 @@
 import pandas as pd
 
 from src import config
+from src.config import RANDOM_STATE
 from src.hand_analysis.dataset_split.eval_train_split import split_subjectwise_evaluation_set_stratified
 from src.hand_analysis.filter.filter_invalid_subjects import filter_invalid_subjects
 from src.hand_analysis.runner.run_hand_analysis import run_analysis_with_default_parameters
@@ -24,9 +25,8 @@ def load_analysis(random_state, test_size) -> pd.DataFrame:
 
 
 def main():
-    random_state = 78
     test_size = 0.2
-    metrics_df = load_analysis(random_state, test_size)
+    metrics_df = load_analysis(RANDOM_STATE, test_size)
     print("Metrics DataFrame:")
     print(metrics_df.head())
 
