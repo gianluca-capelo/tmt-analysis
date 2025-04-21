@@ -17,16 +17,13 @@ def load_analysis() -> pd.DataFrame:
 
     valid_metrics_df = filter_invalid_subjects(metrics_df_with_metadata)
 
-    # save the valid metrics DataFrame to a CSV file
     valid_metrics_df.to_csv(config.ANALYSIS_PATH, index=False)
 
     return valid_metrics_df
 
 
 def main():
-    # Load the analysis and get the DataFrame
     metrics_df = load_analysis()
-    # Print the DataFrame
     print("Metrics DataFrame:")
     print(metrics_df.head())
 
