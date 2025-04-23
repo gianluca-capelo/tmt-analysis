@@ -1,9 +1,7 @@
 import pandas as pd
 from matplotlib import pyplot as plt
-from matplotlib.pyplot import xticks
 
 from src.config import TRAIN_SET_PATH
-
 
 
 def compare_trial_by_group(df, trial_discriminant: str):
@@ -40,7 +38,7 @@ def compare_trial_by_group(df, trial_discriminant: str):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv(TRAIN_SET_PATH)
+    train_set = pd.read_csv(TRAIN_SET_PATH)
 
-    compare_trial_by_group(df, 'trial_id')
-    compare_trial_by_group(df, 'trial_order_of_appearance')
+    compare_trial_by_group(train_set, 'trial_id')
+    compare_trial_by_group(train_set, 'trial_order_of_appearance')
