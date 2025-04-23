@@ -39,3 +39,9 @@ if __name__ == "__main__":
 
     plot_feature_aggregation_by_subject_id(df, 'wrong_targets_touches', 'mean')
     plot_feature_aggregation_by_subject_id(df, 'wrong_targets_touches', 'sum')
+
+    plot_feature_aggregation_by_subject_id(df, 'mean_speed', 'mean')
+
+    # for column in df.columns:
+    #     if pd.api.types.is_numeric_dtype(df[column]):
+    #      plot_feature_aggregation_by_subject_id(df, column, 'mean')
