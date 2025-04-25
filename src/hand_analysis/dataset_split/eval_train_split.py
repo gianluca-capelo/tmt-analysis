@@ -1,10 +1,14 @@
+from typing import Tuple
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from src.config import TRAIN_SET_PATH, EVAL_SET_PATH
 
-
-def split_subjectwise_evaluation_set_stratified(df: pd.DataFrame, test_size, random_state):
+def split_subjectwise_evaluation_set_stratified(
+        df: pd.DataFrame,
+        eval_size: float,
+        random_state: int,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits a dataset into training and evaluation sets, stratifying by group at the subject level.
 
@@ -29,16 +33,12 @@ def split_subjectwise_evaluation_set_stratified(df: pd.DataFrame, test_size, ran
     # Stratified split based on group label
     train_subjects, eval_subjects = train_test_split(
         subject_group_df[subject_col],
-        test_size=test_size,
+        test_size=eval_size,
         stratify=subject_group_df[group_col],
         random_state=random_state
     )
 
-    # Select rows from the original dataframe
-    df_train = df[df[subject_col].isin(train_subjects)].copy()
-    df_eval = df[df[subject_col].isin(eval_subjects)].copy()
+    train_ids = train_subjects.tolist()
+    eval_ids = eval_subjects.tolist()
 
-    df_train.to_csv(TRAIN_SET_PATH)
-    df_eval.to_csv(EVAL_SET_PATH)
-
-    return df_train, df_eval
+    return train_ids, eval_ids

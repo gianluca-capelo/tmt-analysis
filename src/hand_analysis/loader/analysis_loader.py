@@ -15,11 +15,14 @@ from src.metadata.add_metadata import add_metadata_to_metrics
 
 
 def load_analysis(random_state: int,
-                  test_size: float,
+                  eval_size: float,
                   split: bool = False) -> pd.DataFrame:
     """
     Run the analysis pipeline, save results and metadata, and optionally split the dataset.
     """
+    if split is True and eval_size is None:
+        raise ValueError("eval_size must be set when split is True.")
+
     # 1) Generate a timestamped run directory
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = create_run_folder(timestamp)
@@ -31,20 +34,21 @@ def load_analysis(random_state: int,
     metrics_df = add_metadata_to_metrics(metrics_df)
     valid_metrics_df = filter_invalid_subjects(metrics_df)
 
-    # 3) Save results and metadata
-    save_results(valid_metrics_df, run_dir, timestamp, random_state, test_size)
-
-    # 4) Optional stratified split
+    # 3) Optional stratified split
+    train_subject_ids, eval_subject_ids = None, None
     if split:
-        split_subjectwise_evaluation_set_stratified(
+        train_subject_ids, eval_subject_ids = split_subjectwise_evaluation_set_stratified(
             valid_metrics_df,
-            test_size=test_size,
+            eval_size=eval_size,
             random_state=random_state
         )
         logger.info(
             "Completed data split with test_size=%s, random_state=%s",
-            test_size, random_state
+            eval_size, random_state
         )
+
+    # 4) Save results and metadata
+    save_results(valid_metrics_df, run_dir, timestamp, random_state, eval_size, train_subject_ids, eval_subject_ids)
 
     return valid_metrics_df
 
@@ -92,7 +96,9 @@ def save_results(
         run_dir: Path,
         timestamp: str,
         random_state: int,
-        test_size: float
+        test_size: float,
+        train_subject_ids,
+        eval_subject_ids
 ) -> None:
     """
     Save the metrics DataFrame and configuration metadata to the run directory.
@@ -106,6 +112,8 @@ def save_results(
         "test_size": test_size,
         "raw_data_dir": config_file.RAW_DATA_DIR,
         "metadata_path": config_file.METADATA_CSV,
+        "train_subject_ids": train_subject_ids,
+        "eval_subject_ids": eval_subject_ids,
     }
     run_config.update(git_info())
 
@@ -127,10 +135,21 @@ def save_results(
 
 
 def main():
-    test_size = 0.2
-    metrics_df = load_analysis(RANDOM_STATE, test_size)
-    print("Metrics DataFrame:")
-    print(metrics_df.head())
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run hand analysis.")
+    parser.add_argument(
+        "--split",
+        action="store_true",
+        help="Perform a split of the dataset into train and evaluation sets."
+    )
+    args = parser.parse_args()
+    split = args.split
+    eval_size = None
+    if split:
+        eval_size = float(input("Enter evaluation test size (e.g., 0.2): "))
+
+    load_analysis(RANDOM_STATE, eval_size, split)
 
 
 if __name__ == "__main__":
