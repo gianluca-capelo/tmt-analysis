@@ -8,8 +8,7 @@ import pandas as pd
 from src import config as config_file
 
 
-def get_configuration(
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def load_last_analysis() -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Load the training and evaluation DataFrames from the most recent  run directory by reading from configuration.json.
 
@@ -22,7 +21,9 @@ def get_configuration(
     run_config = get_run_configuration(run_dir)
 
     train_ids = run_config.get("train_subject_ids")
+    train_ids = [int(i) for i in train_ids]
     eval_ids = run_config.get("eval_subject_ids")
+    eval_ids = [int(i) for i in eval_ids]
     if train_ids is None or eval_ids is None:
         raise KeyError("`train_subject_ids` or `eval_subject_ids` not found in configuration.json")
 
@@ -30,6 +31,7 @@ def get_configuration(
     data_path = run_dir / "analysis.csv"
     if not data_path.exists():
         raise FileNotFoundError(f"Analysis CSV not found in {run_dir}")
+
     df = pd.read_csv(data_path)
 
     # Filter by IDs
