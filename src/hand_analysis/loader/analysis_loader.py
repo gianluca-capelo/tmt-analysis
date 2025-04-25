@@ -137,6 +137,7 @@ def save_results(
         "correct_targets_minimum": config_file.CORRECT_THRESHOLD,
         "cut_criteria": config_file.CUT_CRITERIA,
         "consecutive_points": config_file.CONSECUTIVE_POINTS,
+        "calculate_crosses": config_file.CALCULATE_CROSSES,
         "random_state": random_state,
         "test_size": test_size,
         "raw_data_dir": config_file.RAW_DATA_DIR,
