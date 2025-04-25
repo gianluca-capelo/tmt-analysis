@@ -31,6 +31,7 @@ RADIUS_HEIGHT = 0.05
 # TMT parameters
 CORRECT_THRESHOLD = None
 CONSECUTIVE_POINTS = 5
+CUT_CRITERIA = None
 
 # Subjects classification
 SUBJECT_GROUP = {**{i: "control" for i in

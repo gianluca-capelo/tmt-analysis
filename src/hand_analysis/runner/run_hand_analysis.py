@@ -25,8 +25,11 @@ def log_and_run_tmt_analysis(dataset_path, output_path, correct_targets_minimum,
 def run_analysis_with_default_parameters():
     # Cargamos el análisis de TMT
     threshold = config.CORRECT_THRESHOLD
-    cut_criteria = "MINIMUM_TARGETS" if threshold else None
+    cut_criteria = config.CUT_CRITERIA
     points = config.CONSECUTIVE_POINTS
+
+    if threshold is None and cut_criteria == "MINIMUM_TARGETS":
+        raise ValueError("`correct_targets_minimum` must be set when `cut_criteria` is 'MINIMUM_TARGETS'.")
 
     analysis = log_and_run_tmt_analysis(
         dataset_path=config.PYXATIONS_PATIENTS_DATA_DIR,
