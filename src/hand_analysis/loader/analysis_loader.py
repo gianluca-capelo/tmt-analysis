@@ -4,12 +4,12 @@ from src import config
 from src.config import RANDOM_STATE
 from src.hand_analysis.dataset_split.eval_train_split import split_subjectwise_evaluation_set_stratified
 from src.hand_analysis.filter.filter_invalid_subjects import filter_invalid_subjects
-from src.hand_analysis.runner.run_hand_analysis import run_analysis_with_default_parameters
+from src.hand_analysis.runner.run_hand_analysis import run_analysis_with_configuration_parameters
 from src.metadata.add_metadata import add_metadata_to_metrics
 
 
 def load_analysis_with_default_parameters(random_state, test_size, split=False) -> pd.DataFrame:
-    analysis = run_analysis_with_default_parameters()
+    analysis = run_analysis_with_configuration_parameters()
 
     metrics_df = analysis.get_metrics_dataframe()
 

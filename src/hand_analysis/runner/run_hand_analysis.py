@@ -22,7 +22,7 @@ def log_and_run_tmt_analysis(dataset_path, output_path, correct_targets_minimum,
     return hand_analysis
 
 
-def run_analysis_with_default_parameters():
+def run_analysis_with_configuration_parameters():
     # Cargamos el análisis de TMT
     threshold = config.CORRECT_THRESHOLD
     cut_criteria = config.CUT_CRITERIA
@@ -51,4 +51,4 @@ def run_analysis_with_default_parameters():
 
 
 if __name__ == "__main__":
-    run_analysis_with_default_parameters()
+    run_analysis_with_configuration_parameters()
