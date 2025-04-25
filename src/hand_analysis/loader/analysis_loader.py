@@ -103,7 +103,9 @@ def save_results(
         "cut_criteria": config_file.CUT_CRITERIA,
         "consecutive_points": config_file.CONSECUTIVE_POINTS,
         "random_state": random_state,
-        "test_size": test_size
+        "test_size": test_size,
+        "raw_data_dir": config_file.RAW_DATA_DIR,
+        "metadata_path": config_file.METADATA_CSV,
     }
     run_config.update(git_info())
 
