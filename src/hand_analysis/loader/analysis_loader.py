@@ -40,7 +40,6 @@ def load_analysis(random_state: int,
     metrics_df = add_metadata_to_metrics(metrics_df)
     valid_metrics_df = filter_invalid_subjects(metrics_df)
 
-
     # 3) Split the dataset if required
     train_subject_ids, eval_subject_ids = get_split_ids(eval_size, old_split_config_date, random_state, split,
                                                         valid_metrics_df)
