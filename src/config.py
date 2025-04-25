@@ -31,7 +31,7 @@ RADIUS_HEIGHT = 0.05
 CORRECT_THRESHOLD = None
 CONSECUTIVE_POINTS = 5
 CUT_CRITERIA = None
-CALCULATE_CROSSES = True
+CALCULATE_CROSSES = False
 
 # Subjects classification
 SUBJECT_GROUP = {**{i: "control" for i in
