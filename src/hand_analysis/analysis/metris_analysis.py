@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Patch
 
 from src.config import TRAIN_SET_PATH
+from src.hand_analysis.loader.load_last_split import load_last_analysis
 
 
 def plot_feature_aggregation_by_subject_id(data: pd.DataFrame, feature: str, agg_function: str = 'mean'):
@@ -32,16 +33,16 @@ def plot_feature_aggregation_by_subject_id(data: pd.DataFrame, feature: str, agg
 
 
 if __name__ == "__main__":
-    df = pd.read_csv(TRAIN_SET_PATH)
+    df,_ = load_last_analysis()
 
-    plot_feature_aggregation_by_subject_id(df, 'correct_targets_touches', 'mean')
-    plot_feature_aggregation_by_subject_id(df, 'correct_targets_touches', 'sum')
+    # plot_feature_aggregation_by_subject_id(df, 'correct_targets_touches', 'mean')
+    # plot_feature_aggregation_by_subject_id(df, 'correct_targets_touches', 'sum')
+    #
+    # plot_feature_aggregation_by_subject_id(df, 'wrong_targets_touches', 'mean')
+    # plot_feature_aggregation_by_subject_id(df, 'wrong_targets_touches', 'sum')
+    #
+    # plot_feature_aggregation_by_subject_id(df, 'mean_speed', 'mean')
 
-    plot_feature_aggregation_by_subject_id(df, 'wrong_targets_touches', 'mean')
-    plot_feature_aggregation_by_subject_id(df, 'wrong_targets_touches', 'sum')
-
-    plot_feature_aggregation_by_subject_id(df, 'mean_speed', 'mean')
-
-    # for column in df.columns:
-    #     if pd.api.types.is_numeric_dtype(df[column]):
-    #      plot_feature_aggregation_by_subject_id(df, column, 'mean')
+    for column in df.columns:
+        if pd.api.types.is_numeric_dtype(df[column]):
+         plot_feature_aggregation_by_subject_id(df, column, 'mean')

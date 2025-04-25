@@ -3,6 +3,8 @@ import pandas as pd
 import seaborn as sns
 
 from src.config import TRAIN_SET_PATH
+from src.hand_analysis.loader.analysis_loader import load_analysis
+from src.hand_analysis.loader.load_last_split import load_last_analysis, load_analysis_by_date
 
 
 def plot_loss_matrix(data):
@@ -52,5 +54,5 @@ def plot_loss_matrix(data):
 
 
 if __name__ == "__main__":
-    data = pd.read_csv(TRAIN_SET_PATH)
-    plot_loss_matrix(data)
+    train_set,_ = load_analysis_by_date("2025-04-25_12-55-48")
+    plot_loss_matrix(train_set)

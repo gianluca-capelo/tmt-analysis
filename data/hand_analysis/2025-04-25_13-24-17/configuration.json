@@ -1,7 +1,7 @@
 {
-  "timestamp": "2025-04-25_12-43-00",
-  "correct_targets_minimum": null,
-  "cut_criteria": null,
+  "timestamp": "2025-04-25_13-24-17",
+  "correct_targets_minimum": 8,
+  "cut_criteria": "MINIMUM_TARGETS",
   "consecutive_points": 5,
   "random_state": 78,
   "test_size": null,
@@ -101,8 +101,10 @@
     "0092",
     "0072"
   ],
-  "git_branch": "filtering",
-  "git_commit": "76a3f300d5ec6f299c13816c44dac2ccb628d72e",
-  "git_msg": "analysis",
+  "is_new_split": false,
+  "old_split_config_date": "2025-04-25_12-55-48",
+  "git_branch": "run_with_cut",
+  "git_commit": "34b25d948402b6934d43479af87c09c815a7c6d3",
+  "git_msg": "Merge pull request #5 from gianluca-capelo/filtering",
   "git_dirty": true
 }

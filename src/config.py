@@ -10,9 +10,8 @@ HAND_ANALYSIS_FOLDER = os.path.join(DATA_DIR, "hand_analysis")
 ANALYSIS_PATH = os.path.join(DATA_DIR, "hand_analysis", "analysis.csv")
 METADATA_CSV = os.path.join(DATA_DIR, "metadata", "metadata.csv")
 
-TRAIN_SET_PATH =  os.path.join(DATA_DIR, "hand_analysis", "train_set.csv")
-EVAL_SET_PATH =  os.path.join(DATA_DIR, "hand_analysis", "eval_set.csv")
-
+TRAIN_SET_PATH = os.path.join(DATA_DIR, "hand_analysis", "train_set.csv")
+EVAL_SET_PATH = os.path.join(DATA_DIR, "hand_analysis", "eval_set.csv")
 
 PATIENTS_DATA_DIR = os.path.join(DATA_DIR, "patients_data")
 PYXATIONS_PATIENTS_DATASET_NAME = "patients_data_pyxations"
@@ -29,9 +28,10 @@ LOGGING_CONFIG = {
 RADIUS_HEIGHT = 0.05
 
 # TMT parameters
-CORRECT_THRESHOLD = None
+CORRECT_THRESHOLD = 8
 CONSECUTIVE_POINTS = 5
-CUT_CRITERIA = None
+CUT_CRITERIA = "MINIMUM_TARGETS"
+CALCULATE_CROSSES= False
 
 # Subjects classification
 SUBJECT_GROUP = {**{i: "control" for i in
