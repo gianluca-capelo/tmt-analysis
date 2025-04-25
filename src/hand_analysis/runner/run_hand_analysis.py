@@ -22,7 +22,7 @@ def log_and_run_tmt_analysis(dataset_path, output_path, correct_targets_minimum,
     return hand_analysis
 
 
-def run_analysis_with_configuration_parameters():
+def run_analysis_with_configuration_parameters(output_path):
     # Cargamos el análisis de TMT
     threshold = config.CORRECT_THRESHOLD
     cut_criteria = config.CUT_CRITERIA
@@ -33,7 +33,7 @@ def run_analysis_with_configuration_parameters():
 
     analysis = log_and_run_tmt_analysis(
         dataset_path=config.PYXATIONS_PATIENTS_DATA_DIR,
-        output_path=config.HAND_ANALYSIS_FOLDER,
+        output_path=output_path,
         correct_targets_minimum=threshold,
         consecutive_points=points,
         cut_criteria=cut_criteria
