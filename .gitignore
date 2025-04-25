@@ -174,8 +174,17 @@ cython_debug/
 .pypirc
 
 .vscode/
-data/
 results/
 
 #ignore all figures folder from different directories
 **/figures/
+
+# Data ignore rules:
+# 1) Ignore all files under data
+/data/**
+# 2) But allow Git to see the hand_analysis directory itself
+!/data/hand_analysis/
+# 3) And recurse into all sub-dirs of hand_analysis
+!/data/hand_analysis/**/
+# 4) Finally, explicitly include only configuration.json
+!/data/hand_analysis/**/configuration.json
