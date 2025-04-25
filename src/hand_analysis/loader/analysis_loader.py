@@ -18,7 +18,7 @@ from src.metadata.add_metadata import add_metadata_to_metrics
 def load_analysis(random_state: int,
                   eval_size: float,
                   split: bool,
-                  old_split_config_date: str
+                  old_split_config_date: str | None
                   ) -> pd.DataFrame:
     """
     Run the analysis pipeline, save results and metadata, and optionally split the dataset.
@@ -45,7 +45,9 @@ def load_analysis(random_state: int,
                                                         valid_metrics_df)
 
     # 4) Save results and metadata
-    save_results(valid_metrics_df, run_dir, timestamp, random_state, eval_size, train_subject_ids, eval_subject_ids)
+    save_results(valid_metrics_df, run_dir, timestamp, random_state, eval_size, train_subject_ids, eval_subject_ids,
+                 split,
+                 old_split_config_date)
 
     return valid_metrics_df
 
@@ -123,7 +125,9 @@ def save_results(
         random_state: int,
         test_size: float,
         train_subject_ids,
-        eval_subject_ids
+        eval_subject_ids,
+        split: bool,
+        old_split_config_date: str
 ) -> None:
     """
     Save the metrics DataFrame and configuration metadata to the run directory.
@@ -139,6 +143,8 @@ def save_results(
         "metadata_path": config_file.METADATA_CSV,
         "train_subject_ids": train_subject_ids,
         "eval_subject_ids": eval_subject_ids,
+        "is_new_split": split,
+        "old_split_config_date": old_split_config_date,
     }
     run_config.update(git_info())
 
