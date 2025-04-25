@@ -8,7 +8,7 @@ from src.hand_analysis.runner.run_hand_analysis import run_analysis_with_configu
 from src.metadata.add_metadata import add_metadata_to_metrics
 
 
-def load_analysis_with_default_parameters(random_state, test_size, split=False) -> pd.DataFrame:
+def load_analysis(random_state, test_size, split=False) -> pd.DataFrame:
     analysis = run_analysis_with_configuration_parameters()
 
     metrics_df = analysis.get_metrics_dataframe()
@@ -27,7 +27,7 @@ def load_analysis_with_default_parameters(random_state, test_size, split=False) 
 
 def main():
     test_size = 0.2
-    metrics_df = load_analysis_with_default_parameters(RANDOM_STATE, test_size)
+    metrics_df = load_analysis(RANDOM_STATE, test_size)
     print("Metrics DataFrame:")
     print(metrics_df.head())
 
