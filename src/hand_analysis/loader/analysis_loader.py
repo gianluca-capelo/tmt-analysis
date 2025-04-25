@@ -40,7 +40,18 @@ def load_analysis(random_state: int,
     metrics_df = add_metadata_to_metrics(metrics_df)
     valid_metrics_df = filter_invalid_subjects(metrics_df)
 
-    # 3) Optional stratified split
+
+    # 3) Split the dataset if required
+    train_subject_ids, eval_subject_ids = get_split_ids(eval_size, old_split_config_date, random_state, split,
+                                                        valid_metrics_df)
+
+    # 4) Save results and metadata
+    save_results(valid_metrics_df, run_dir, timestamp, random_state, eval_size, train_subject_ids, eval_subject_ids)
+
+    return valid_metrics_df
+
+
+def get_split_ids(eval_size, old_split_config_date, random_state, split, valid_metrics_df):
     if split:
         train_subject_ids, eval_subject_ids = split_subjectwise_evaluation_set_stratified(
             valid_metrics_df,
@@ -65,11 +76,7 @@ def load_analysis(random_state: int,
         # Use all subjects for training
         train_subject_ids = valid_metrics_df['subject_id'].unique()
         eval_subject_ids = None
-
-    # 4) Save results and metadata
-    save_results(valid_metrics_df, run_dir, timestamp, random_state, eval_size, train_subject_ids, eval_subject_ids)
-
-    return valid_metrics_df
+    return train_subject_ids, eval_subject_ids,
 
 
 def create_run_folder(timestamp: str) -> Path:
