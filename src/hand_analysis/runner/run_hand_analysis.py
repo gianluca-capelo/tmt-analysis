@@ -6,7 +6,7 @@ from src import config
 from src.hand_analysis.mapper.psychopy_mapper import PsychopyTMTMapper
 
 
-def load_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consecutive_points, cut_criteria):
+def log_and_run_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consecutive_points, cut_criteria):
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -28,7 +28,7 @@ def run_analysis_with_default_parameters():
     cut_criteria = "MINIMUM_TARGETS" if threshold else None
     points = config.CONSECUTIVE_POINTS
 
-    analysis = load_tmt_analysis(
+    analysis = log_and_run_tmt_analysis(
         dataset_path=config.PYXATIONS_PATIENTS_DATA_DIR,
         output_path=config.HAND_ANALYSIS_FOLDER,
         correct_targets_minimum=threshold,
