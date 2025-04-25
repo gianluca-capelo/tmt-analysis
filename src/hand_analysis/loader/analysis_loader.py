@@ -1,8 +1,8 @@
 import json
+import logging
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from venv import logger
 
 import pandas as pd
 
@@ -10,23 +10,29 @@ from src import config as config_file
 from src.config import RANDOM_STATE
 from src.hand_analysis.dataset_split.eval_train_split import split_subjectwise_evaluation_set_stratified
 from src.hand_analysis.filter.filter_invalid_subjects import filter_invalid_subjects
+from src.hand_analysis.loader.load_last_split import get_run_configuration
 from src.hand_analysis.runner.run_hand_analysis import run_analysis_with_configuration_parameters
 from src.metadata.add_metadata import add_metadata_to_metrics
 
 
 def load_analysis(random_state: int,
                   eval_size: float,
-                  split: bool = False) -> pd.DataFrame:
+                  split: bool,
+                  old_split_config_date: str
+                  ) -> pd.DataFrame:
     """
     Run the analysis pipeline, save results and metadata, and optionally split the dataset.
     """
     if split is True and eval_size is None:
         raise ValueError("eval_size must be set when split is True.")
 
+    if old_split_config_date is not None and split is True:
+        raise ValueError("Cannot use old_split_config_date when split is True.")
+
     # 1) Generate a timestamped run directory
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     run_dir = create_run_folder(timestamp)
-    logger.info("Created run directory %s", run_dir)
+    logging.info("Created run directory %s", run_dir)
 
     # 2) Execute analysis
     analysis = run_analysis_with_configuration_parameters(run_dir)
@@ -35,17 +41,30 @@ def load_analysis(random_state: int,
     valid_metrics_df = filter_invalid_subjects(metrics_df)
 
     # 3) Optional stratified split
-    train_subject_ids, eval_subject_ids = None, None
     if split:
         train_subject_ids, eval_subject_ids = split_subjectwise_evaluation_set_stratified(
             valid_metrics_df,
             eval_size=eval_size,
             random_state=random_state
         )
-        logger.info(
+        logging.info(
             "Completed data split with test_size=%s, random_state=%s",
             eval_size, random_state
         )
+    elif old_split_config_date:
+        logging.info(
+            "Loading old split configuration from %s",
+            old_split_config_date
+        )
+        old_split_config_dir = Path(config_file.HAND_ANALYSIS_FOLDER) / old_split_config_date
+        old_configuration = get_run_configuration(old_split_config_dir)
+        train_subject_ids = old_configuration.get("train_subject_ids")
+        eval_subject_ids = old_configuration.get("eval_subject_ids")
+    else:
+        logging.info("No split performed, using all subjects for training.")
+        # Use all subjects for training
+        train_subject_ids = valid_metrics_df['subject_id'].unique()
+        eval_subject_ids = None
 
     # 4) Save results and metadata
     save_results(valid_metrics_df, run_dir, timestamp, random_state, eval_size, train_subject_ids, eval_subject_ids)
@@ -86,7 +105,7 @@ def git_info() -> dict:
         ) != 0
 
     except subprocess.CalledProcessError as e:
-        logger.warning("Failed to retrieve Git metadata: %s", e)
+        logging.warning("Failed to retrieve Git metadata: %s", e)
         meta["git_error"] = str(e)
     return meta
 
@@ -121,17 +140,17 @@ def save_results(
     try:
         with config_path.open("w") as f:
             json.dump(run_config, f, indent=2)
-        logger.info("Saved configuration to %s", config_path)
+        logging.info("Saved configuration to %s", config_path)
     except IOError as e:
-        logger.error("Failed to write configuration file: %s", e)
+        logging.error("Failed to write configuration file: %s", e)
 
     # Write results CSV
     data_path = run_dir / "analysis.csv"
     try:
         df.to_csv(data_path, index=False)
-        logger.info("Saved analysis results to %s", data_path)
+        logging.info("Saved analysis results to %s", data_path)
     except IOError as e:
-        logger.error("Failed to write analysis CSV: %s", e)
+        logging.error("Failed to write analysis CSV: %s", e)
 
 
 def main():
@@ -149,7 +168,12 @@ def main():
     if split:
         eval_size = float(input("Enter evaluation test size (e.g., 0.2): "))
 
-    load_analysis(RANDOM_STATE, eval_size, split)
+    if not split:
+        old_split_config_date = input("Enter the date of the old split configuration (YYYY-MM-DD_HH-MM-SS): ")
+    else:
+        old_split_config_date = None
+
+    load_analysis(RANDOM_STATE, eval_size, split, old_split_config_date)
 
 
 if __name__ == "__main__":

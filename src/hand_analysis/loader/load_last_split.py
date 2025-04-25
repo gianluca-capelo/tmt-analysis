@@ -41,7 +41,7 @@ def load_last_analysis() -> Tuple[pd.DataFrame, pd.DataFrame]:
     return df_train, df_eval
 
 
-def get_run_configuration(run_dir):
+def get_run_configuration(run_dir) -> dict:
     config_path = run_dir / "configuration.json"
     if not config_path.exists():
         raise FileNotFoundError(f"Configuration file not found in {run_dir}")
