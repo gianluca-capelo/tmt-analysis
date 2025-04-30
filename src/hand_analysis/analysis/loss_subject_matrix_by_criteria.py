@@ -2,55 +2,77 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+from src.config import FIGURES_DIR
 from src.hand_analysis.loader.load_last_split import load_analysis_by_date
 
 
-def plot_loss_matrix(data):
+def plot_loss_matrix(data, ax=None, title_suffix=''):
     subjects = data['subject_id'].unique()
     total_subjects = len(subjects)
+    number_of_trials = len(data['trial_order_of_appearance'].unique())
+    number_of_trials_range = range(1, number_of_trials + 1)
+    target_touches_range = range(0, 16)
 
-    # Maximum number of trials per subject (should be 15)
-    max_trials = data['trial_id'].nunique()
-
-    # Prepare a grid for N (required number of qualifying trials) and M (threshold correct touches)
-    N_values = range(1, max_trials + 1)  # 1 through 15
-    M_values = range(0, 16)  # 0 through 15 possible touches
-
-    # Initialize a DataFrame to store the number of subjects lost for each (N, M)
-    lost_matrix = pd.DataFrame(index=N_values, columns=M_values)
-
-    # Precompute per-subject counts for each M threshold
-    # subject_counts[M] = number of trials where correct_targets_touches >= M
-    subject_counts = pd.DataFrame(index=subjects, columns=M_values)
-
-    for M in M_values:
-        counts = data.groupby('subject_id')['correct_targets_touches'] \
+    # build subject_counts
+    subject_counts = pd.DataFrame(index=subjects, columns=target_touches_range, dtype=int)
+    for M in target_touches_range:
+        counts = (
+            data
+            .groupby('subject_id')['correct_targets_touches']
             .apply(lambda touches: (touches >= M).sum())
+        )
         subject_counts[M] = counts
 
-    # Compute lost subjects for each (N, M)
-    for N in N_values:
-        for M in M_values:
+    # build lost_matrix
+    lost_matrix = pd.DataFrame(index=number_of_trials_range, columns=target_touches_range, dtype=int)
+    for N in number_of_trials_range:
+        for M in target_touches_range:
             retained = (subject_counts[M] >= N).sum()
-            lost = total_subjects - retained
-            lost_matrix.at[N, M] = lost
+            lost_matrix.at[N, M] = total_subjects - retained
 
-    # Plot heatmap of lost subjects
-    plt.figure(figsize=(12, 8))
+    # if no Axes passed in, make a new one
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(12, 8))
+
     sns.heatmap(
         lost_matrix.astype(int),
         annot=True,
         fmt="d",
         cmap="viridis",
-        cbar_kws={'label': 'Number of Subjects Lost'}
+        cbar_kws={'label': 'Number of Subjects Lost'},
+        ax=ax
     )
-    plt.title('Subjects Lost by Retention Criteria\n(N trials with ≥M correct touches)')
-    plt.xlabel('M: Correct Touches Threshold')
-    plt.ylabel('N: Minimum Qualifying Trials')
-    plt.tight_layout()
-    plt.show()
+    ax.set_title(f'Subjects Lost by Retention Criteria {title_suffix}')
+    ax.set_xlabel('M: Correct Touches Threshold')
+    ax.set_ylabel('N: Minimum Qualifying Trials')
 
 
 if __name__ == "__main__":
     train_set, _ = load_analysis_by_date("2025-04-25_12-55-48")
-    plot_loss_matrix(train_set)
+    fig, axes = plt.subplots(1, 2, figsize=(16, 7), sharey=True)
+
+    plot_loss_matrix(
+        train_set[train_set['trial_type'] == 'PART_A'],
+        ax=axes[0],
+        title_suffix='(PART_A)'
+    )
+
+    plot_loss_matrix(
+        train_set[train_set['trial_type'] == 'PART_B'],
+        ax=axes[1],
+        title_suffix='(PART_B)'
+    )
+    plt.tight_layout()
+    plt.savefig(f"{FIGURES_DIR}/loss_matrix.png", dpi=300, bbox_inches='tight')
+    plt.show()
+
+    plot_loss_matrix(
+        train_set,
+        ax=None,
+        title_suffix=None
+    )
+
+    plt.tight_layout()
+    plt.savefig(f"{FIGURES_DIR}/loss_matrix_all.png"
+                , dpi=300, bbox_inches='tight')
+    plt.show()
