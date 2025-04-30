@@ -5,7 +5,7 @@ from src.config import TRAIN_SET_PATH
 from src.hand_analysis.loader.load_last_split import load_last_analysis
 
 
-def compare_trial_by_group(df, trial_discriminant: str):
+def compare_trial_by_group(df, trial_discriminant: str, title_suffix: str = ''):
     if trial_discriminant not in df.columns:
         raise ValueError(f"'{trial_discriminant}' is not a valid column in the DataFrame.")
     if trial_discriminant not in ('trial_id', 'trial_order_of_appearance'):
@@ -32,7 +32,7 @@ def compare_trial_by_group(df, trial_discriminant: str):
 
     plt.xlabel(trial_discriminant)
     plt.ylabel('Mean Percentage Correct')
-    plt.title('Mean Percent Correct Across Trials by Group')
+    plt.title(f'Mean Percent Correct Across Trials by Group {title_suffix}')
     plt.legend()
     plt.tight_layout()
     plt.show()
@@ -41,5 +41,7 @@ def compare_trial_by_group(df, trial_discriminant: str):
 if __name__ == "__main__":
     train_set, _ = load_last_analysis()
 
-    compare_trial_by_group(train_set, 'trial_id')
+    compare_trial_by_group(train_set[train_set['trial_type'] == 'PART_A'], 'trial_id', '(PART_A)')
+    compare_trial_by_group(train_set[train_set['trial_type'] == 'PART_B'], 'trial_id', '(PART_B)')
+
     compare_trial_by_group(train_set, 'trial_order_of_appearance')
