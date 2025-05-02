@@ -2,7 +2,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from src.config import TRAIN_SET_PATH
-from src.hand_analysis.loader.load_last_split import load_last_analysis
+from src.hand_analysis.loader.load_last_split import load_last_analysis, load_analysis_by_date
 
 
 def compare_trial_by_group(df, trial_discriminant: str, title_suffix: str = ''):
