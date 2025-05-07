@@ -1,0 +1,101 @@
+,suj,grupo,clasificación de caso,comentario (tipo de caso o criterio de exclusión),id participante,fecha,hora,neuropsicol.,eyetracker,sex,age,anteojos,observaciones,mmse,mmse fallas,tmt a papel pb,tmt b papel pb,tmt b papel errores,digit symbol pb,span directo pb,span inverso pb,reloj,años de escolaridad
+0,1,control,,*,946462,22/1/2024,14:30,Betsabé,Gus,1,52,-,No trajo los lentes para ver de cerca,30.0,--,32.0,47.0,,63,6.0,4.0,2.0,18.0
+1,2,control,,*,2684844,22/1/2024,15:00,Betsabé,Gus,0,78,Anteojos,,28.0,-2 recuerdo ,47.0,82.0,,36,6.0,5.0,3.0,16.0
+2,3,mci,DCL MD no amnesico,,6305,22/1/2024,15:30,Laura,Gus,1,68,Anteojos,,28.0,-2 atención,65.0,107.0,,45,5.0,4.0,3.0,12.0
+3,4,mci,DCL MD no amnesico,,2060316,22/1/2024,16:00,Laura,Gus,1,80,Anteojos,,28.0,-1 atención. -1 recuerdo,55.0,109.0,,38,5.0,4.0,3.0,15.0
+4,5,mci,DCL MD no amnesico,,4744,22/1/2024,16:30,Betsabé,Gus,1,87,Anteojos,,25.0,-2 OT. -1 At. -1 rec. -1VC,63.0,180.09,(2 errores),32,5.0,3.0,1.0,10.0
+5,6,control,,,Tecnico Hiba ¿?,29/1/2024,15:00,Betsabé,Gus,0,61,-,,29.0,-1 atencion,35.87,49.91,,54,7.0,5.0,3.0,13.0
+6,7,control,,,94469,29/1/2024,16:00,Betsabé,Gus,1,77,Anteojos,,30.0,--,52.62,79.42,,78,8.0,4.0,3.0,12.0
+7,8,mci,,*,424643,8/2/2024,10:00,Laura,Gus,0,80,Sin anteojos,,26.0,-3 OT. -1 recuerdo.,50.0,65.0,(1 error),65,6.0,4.0,3.0,17.0
+8,9,mci,DCL atencional-ejecucional,Revisado por Betsabe,1528683,15/2/2024,9:30,Betsabé,Gus,1,64,Anteojos,,30.0,--,30.05,300.0,300,86,5.0,3.0,3.0,16.0
+9,10,control,,,189427,15/2/2024,10:00,Betsabé,Gus,1,81,-,,30.0,--,51.0,61.24,,78,6.0,4.0,3.0,15.0
+10,11,mci,DCL MD no amnesico,,5223,15/2/2024,10:30,Betsabé,Gus,0,74,Anteojos,,27.0,1 resta. 2 recuerdo,71.69,147.38,,32,5.0,4.0,3.0,18.0
+11,12,mci,DCL MD no amnesico,,4141987,15/2/2024,11:00,Betsabé,Gus,1,82,Anteojos,,26.0,2 atenc. 1 rec. 1 VC,68.82,110.82,,32,5.0,3.0,3.0,12.0
+12,13,mci,,,60824,22/2/2024,14:30,Betsabé,Gus,0,84,Anteojos,,25.0,1 OT. 1 OE. 1 rep. 1 aten. 1 calculo,53.0,101.0,,47,5.0,3.0,2.0,13.0
+13,14,control,,Revisado por Betsabe,16586,22/2/2024,15:00,Betsabé,Gus,0,67,Anteojos,,29.0,rec 1,48.0,76.0,,33,6.0,5.0,3.0,12.0
+14,15,mci,DCL MD no amnesico,,406948,22/2/2024,15:30,Betsabé,Gus,1,78,Anteojos,,24.0,Atenc 5. Rec 1,53.75,159.05,(1 error),35,4.0,3.0,3.0,12.0
+15,16,mci,DCL atencional-ejecucional,Revisado por Betsabe,30495,22/2/2024,16:00,Betsabé,Gus,1,76,Anteojos,,29.0,Atenc 1,54.35,79.68,(1 error),56,5.0,4.0,3.0,12.0
+16,17,mci,DCL atencional-ejecucional,Es caso desde el 2017. Revisado por Betsabe,8103,22/2/2024,16:30,Betsabé,Gus,1,73,No,,30.0,--,41.28,110.52,,39,5.0,4.0,3.0,12.0
+17,18,control,,,1061940,22/2/2024,10:00,Laura,Gus,1,77,Anteojos ,Le tomaba el brillo. mejoro cuando se adelanto apenas de la marca de la silla,29.0,-1 recuerdo,38.0,85.0,,44,5.0,5.0,3.0,17.0
+18,19,mci,,,4389460,22/2/2024,10:45,Laura,Gus,1,68,Anteojos ,,28.0,-2 recuerdo,54.0,140.0,(1 error),47,6.0,4.0,2.0,7.0
+19,20,mci,,Revisado por Betsabe (Navarro),1150365,22/2/2024,11:30,Laura,Gus,0,78,Anteojos ,Le tomaba el marco (grueso) // Más alto que la media ,25.0,-1 OT. -2 atención. -1 recuerdo. -1 visoconstrucción,50.0,147.0,(2 errores),20,6.0,2.0,3.0,7.0
+20,21,control,,,No Hiba,27/2/2024,14:30,Betsabé,Gus,1,67,Anteojos ,,29.0,1 recuerdo,43.17,74.64,,62,5.0,5.0,3.0,12.0
+21,22,control,,,No Hiba,27/2/2024,15:15,Betsabé,Gus,1,81,No,,29.0,1 recuerdo,40.47,78.47,,44,6.0,3.0,3.0,12.0
+22,23,control,,,No Hiba,27/2/2024,16:00,Betsabé,Gus,1,76,Anteojos ,ojos chicos / párpados caídos,27.0,2 atenc. 1 recuerdo,53.54,100.83,,41,3.0,3.0,3.0,10.0
+23,24,mci,DCL amnesico,,5151289,27/2/2024,16:30,Betsabé,Gus,0,73,Anteojos ,,27.0,3 recuerdo,37.56,81.02,(1 error),45,7.0,5.0,2.0,18.0
+24,25,mci,,,1380171,27/2/2024,17:00,Betsabé,Gus,1,83,Anteojos ,baja escolaridad. no sabia usar mouse,25.0,1 OE (fecha). 1 At; 2 rec. 1VC,84.18,338.34,,9,5.0,3.0,1.0,9.0
+25,26,control,,,2002980,4/3/2024,14:00,Betsabé,Gus,0,64,No,TNP el mismo dia,28.0,1 Atenc. 1 Rec,41.17,110.81,,63,6.0,5.0,3.0,18.0
+26,27,mci,,Revisado por Betsabe,No Hiba,4/3/2024,14:50,Betsabé,Gus,1,81,Anteojos,,26.0,2 Atenc. 2 Rec,75.48,243.65,,35,5.0,5.0,2.0,18.0
+27,28,control,,*,No Hiba,4/3/2024,16:30,Betsabé,Gus,1,63,Olvido anteojos,alergia y gotas en los ojos // No se logró calibrar,28.0,2 atencion,54.44,174.48,,32,5.0,4.0,3.0,12.0
+28,29,control,,,No Hiba,4/3/2024,17:00,Betsabé,Gus,1,65,Anteojos ,,29.0,1 recuerdo,54.45,98.8,,49,5.0,4.0,2.0,18.0
+29,30,control,,,No Hiba,11/3/2024,14:00,Betsabé,Gus,1,71,Anteojos ,,30.0,--,33.03,93.61,,47,6.0,4.0,3.0,18.0
+30,31,control,,,No Hiba,11/3/2024,13:00,Betsabé,Gus,1,79,Anteojos ,poca experiencia usando el mouse,30.0,--,53.74,81.73,,60,4.0,5.0,3.0,12.0
+31,32,control,,Excluído (muy joven),55540,11/3/2024,15:30,Betsabe,Gus,0,25,Sin anteojos,muy joven,29.0,1 recuerdo,51.7,75.0,,60,5.0,5.0,3.0,
+32,33,control,,Revisado por Betsabe,No Hiba,11/3/2024,15:50,Betsabe,Gus,1,82,Anteojos,Se logró calibrar pero los anteojos daban mucho reflejo. por lo que no creo que esté bien el dato // poca experiencia usando el mouse,25.0,2 atencion. 2 rec. 1 VC,40.1,85.28,,49,4.0,3.0,3.0,9.0
+33,34,control,,,No Hiba,18/3/2024,14:30,Betsabe,Gus,1,77,Anteojos ,,30.0,--,55.45,66.95,,47,7.0,4.0,3.0,12.0
+34,35,control,,,No Hiba,18/3/2024,17:30,Betsabe,Gus,1,79,Sin anteojos,,30.0,--,35.07,56.02,,65,7.0,5.0,3.0,15.0
+35,36,control,,,2287373,25/3/2024,14:30,Betsabe,Gus,1,58,Sin anteojos,,30.0,--,46.35,69.9,,53,8.0,5.0,3.0,18.0
+36,37,control,,,576238,25/3/2024,15:00,Betsabe,Gus,1,51,Sin anteojos,,30.0,--,40.84,74.04,,75,6.0,5.0,3.0,18.0
+37,38,control,,*,No Hiba,25/3/2024,16:15,Betsabe,Gus,1,59,Sin anteojos,,30.0,--,39.07,82.42,,51,4.0,5.0,3.0,15.0
+38,39,control,,,No Hiba,25/3/2024,17:00,Betsabe,Gus,0,69,Anteojos ,,30.0,--,41.67,77.5,,44,8.0,5.0,3.0,14.0
+39,40,control,,,No Hiba,8/4/2024,,Betsabe,Gus,1,78,Anteojos ,Le temblaba un poco la mano,30.0,,39.81,80.5,(1 error),49,7.0,5.0,3.0,12.0
+40,41,control,,,No Hiba,8/4/2024,,Betsabe,Gus,1,57,Anteojos ,Era una mujer muy alta. le costaba ver los de arriba o algo así por el marco de su anteojo,28.0,1 atencion. 1 rec,23.01,63.71,(1 error),70,6.0,4.0,3.0,15.0
+41,42,mci,DCL MD amnesico,,82420,8/4/2024,,Betsabe,Gus,1,71,Anteojos ,Deficits ejecutivos súper claros. La A le resultaba fácil y la B la mataba. ,28.0,1 OE (piso). 1 rec,56.0,300.0,6 errores ,40,5.0,4.0,3.0,12.0
+42,43,control,,,No Hiba,8/4/2024,,Betsabe,Gus,1,55,Sin anteojos,Puede que haya tenido problemas recordando el abecedario,29.0,1 recuerdo,44.03,96.91,(1 error),61,4.0,3.0,3.0,12.0
+43,44,control,,,5100973,15/4/2024,14:30,Betsabe,Gus,1,50,Sin anteojos,Hizo sin anteojos aunque usaba. de todos modos afirmaba ver bien los puntos,28.0,2 recuerdo,38.05,96.12,,48,6.0,4.0,3.0,18.0
+44,45,mci,DCL amnesico,,4180166,15/4/2024,15:00,Betsabe,Gus,1,77,anteojos,Dificultad para usar el mouse,28.0,1 atencion. 1 recuerdo,61.0,80.23,,41,6.0,5.0,3.0,12.0
+45,46,mci,,,1390167,15/4/2024,15:30,Betsabe,Gus,1,86,anteojos,,28.0,preguntar a Waleska,61.26,107.41,(1 error),32,5.0,3.0,3.0,12.0
+46,47,mci,DCL amnesico,Revisado por Betsabe,5628047,15/4/2024,16:00,Betsabe,Gus,0,68,anteojos,Hablaba mucho y se movía,28.0,1 atencion. 1 VC,64.95,159.24,(1 error),32,4.0,4.0,1.0,18.0
+47,48,mci,,,2862732,15/4/2024,16:30,Betsabe,Gus,1,61,anteojos,,29.0,1 recuerdo,32.21,118.84,(1 error),57,5.0,3.0,3.0,18.0
+48,49,mci,,,156419,22/4/2024,14:00,Betsabe,Gus,0,76,anteojos,Calibramos sin anteojos pero al empezar decidió ponerselos,27.0,2 recuerdo. 1 vc,54.47,280.0,3 errores,37,4.0,3.0,2.0,18.0
+49,50,mci,DCL MD no A,,1379589,22/4/2024,14:30,Betsabe,Gus,1,77,anteojos,,24.0,1 atencion. 3 rec. 1 frase,71.0,234.0,,22,5.0,3.0,2.0,7.0
+50,51,mci,,,629405,22/4/2024,15:00,Betsabe,Gus,1,85,anteojos,Tenía maculopatia pero veía bien los items,22.0,1 Fecha. 4 atención. -2 Recuerdo. -1 VC,103.0,300.0,abandona la tarea,40,7.0,4.0,3.0,18.0
+51,52,control,,*,126946,22/4/2024,15:30,Betsabe,Gus,1,73,anteojos,,30.0,,49.0,64.0,,59,5.0,4.0,3.0,18.0
+52,53,mci,,*,731596,22/4/2024,16hs,Betsabe,Gus,1,84,anteojos,El tipo de lente no permitió calibrar,23.0,5 atencion. 2 recuerdo,99.0,292.0,errores perseverativos,30,5.0,4.0,2.0,12.0
+53,54,mci,,,3240142,25/4/2024,9.3,Laura,Gus,1,57,Sin anteojos,La pantalla de la computadora de registro se trababa,30.0,,43.0,67.0,,56,5.0,4.0,3.0,20.0
+54,55,mci,,,919749,25/4/2024,10,Laura,Gus,1,60,anteojos,No se guardó el .EDF de este sujeto. Lo hizo sin lentes a pesar de que usaba. pero no tuvo muchas dificultade / durante la calibracion hubo puntos que quedaron mas arrriba en el eje Y,28.0,1 atención. 1 recuerdo,27.0,92.0,2 errores de alternancia,45,5.0,4.0,3.0,17.0
+55,56,control,,,711840,6/5/2024,14:00,Betsabe,Gus - Anahi,0,86,anteojos,Costo mucho calibrar. lentes multifocal,28.0,2 comprensión,23.29,51.22,,58,7.0,5.0,3.0,18.0
+56,57,mci,DCL MD no A,,2210255,6/5/2024,14:17,Betsabe,Gus - Anahi,1,84,anteojos,Ojo izquierdo desviación interna. el lente ese tenía un prisma. Por momentos en la calibración decía que veía doble el puntito,27.0,2 recuerdo. 1 VC,51.14,176.78,1 error,44,6.0,3.0,3.0,7.0
+57,58,mci,DCL MD amnesico,,2782785,6/5/2024,15:30,Betsabe,Gus - Anahi,1,76,anteojos,,25.0,1 OT fecha. 3 rec. 1 VC,60.02,104.38,1 error,33,5.0,4.0,2.0,10.0
+58,59,mci,DCL amnesico,Revisado por Betsabe,2007962,6/5/2024,14:30,Betsabe,Gus - Anahi,1,77,anteojos,,24.0,1 OT. 4 atencion. 1 rec. ,77.93,292.46,2 errores,30,4.0,3.0,1.0,12.0
+59,60,mci,DCL MD no A,,5454862,6/5/2024,15:00,Betsabe,Gus - Anahi,1,67,anteojos,Se saco los lentes para el experimento. Decia ver bien sin lentes,29.0,1 recuerdo,43.75,86.12,,49,6.0,5.0,2.0,18.0
+60,61,mci,DCL amnesico - demencia,,20148,13/5/2024,14:00,Betsabe,Anahi - Gus,0,68,Sin anteojos,Costo calibrar,23.0,2 OT. 1 OE. Atenc 1. Rec 3,131.78,264.0,1 error,19,4.0,2.0,2.0,10.0
+61,62,mci,DCL MD no A,,10239,13/5/2024,15:00,Betsabe,Anahi - Gus,1,75,anteojos,,30.0,--,92.7,163.7,1 error,33,5.0,4.0,2.0,12.0
+62,63,control,,,5318152,13/5/2024,16:00,Betsabe,Anahi - Gus,1,52,anteojos,,30.0,---,33.0,56.0,,63,5.0,5.0,3.0,18.0
+63,64,mci,DCL no amnésico,,171382,20/5/2024,13:00,Betsabe,Anahi,1,82,anteojos,,28.0,1 recuerdo. 1 VC,37.91,112.53,2 errores,34,5.0,4.0,2.0,18.0
+64,65,mci,DCL no amnésico,,1151780,20/5/2024,13:30,Betsabe,Anahi,0,68,anteojos,Costo calibrar. parpados caidos. se iba la imagen al borde del anteojo. Pulso con el mouse masomenos,29.0,1 recuerdo,46.0,97.0,,no se lo administraron,6.0,5.0,3.0,12.0
+65,66,mci,DCL no amnésico,,2995015,20/5/2024,14:00,Betsabe,Anahi,0,74,anteojos,Calibración masomenos. pero despues sigue bien el ojo. ,26.0,1 OT. 3 rec,51.96,165.79,,31,6.0,3.0,2.0,18.0
+66,67,mci,DCL no amnésico (parkinson),,546438,20/5/2024,14:30,Betsabe,Anahi,1,84,anteojos,Este lo descartaría. no manejaba el mouse entonces movía mucho la cabeza porque le costaba mover solo la mano. Termino el experimento pero no creo que sirva este dato. ,24.0,1 OT. 2 aten. 2 rec. 1 VC,118.54,166.73,,24,5.0,3.0,2.0,18.0
+67,68,mci,DCL no amnésico,,995,20/5/2024,15:00,Betsabe,Anahi,1,78,anteojos,,25.0,2 atenc. 3 rec,47.0,153.0,,51,5.0,3.0,3.0,12.0
+68,69,mci,DCL no amnésico (parkinson),,2572087,20/5/2024,15:30,Betsabe,Anahi,0,82,anteojos,,27.0,2 rec. 1 vc,52.15,136.0,1 error,42,5.0,4.0,2.0,12.0
+69,70,control,,,,27/5/2024,14hs,Betsabe,Anahi,1,70,anteojos,,26.0,2 atenc. 2 recuerdo,30.22,75.61,,61,6.0,4.0,2.0,12.0
+70,72,mci,DCL MD no amnesico,,3142456,3/6/2024,13:30,Betsabe,Juan,1,65,anteojos,Aca cambia el numero de sujeto por un error,25.0,2 atenc. 3  recuerdo,68.0,145.76,1 error,36,4.0,3.0,3.0,7.0
+71,73,mci,DCL MD no amnesico,,847827,3/6/2024,2:30:00 p.m.,Betsabe,Juan,1,62,anteojos,,29.0,1 VC,101.0,0.0,suspendido,36,5.0,3.0,3.0,10.0
+72,74,control,,,,3/6/2024,15:30hs,Betsabe ,Juan,1,50,anteojos,,27.0,2 atencion. 1 recuerdo,28.44,84.54,,61,7.0,4.0,2.0,15.0
+73,75,mci,DCL no amnesico,,No Hiba,10/6/2024,2:30:00 p.m.,Betsabe ,Anahi,1,78,sin anteojos,calibro medio mal,26.0,2  atencion. 2 recuerdo,99.76,337.0,2 errores,30,6.0,4.0,3.0,18.0
+74,76,mci,,,5699030,10/6/2024,15;30,Betsabe ,Anahi,1,52,anteojos,calibro bien pero despues vi que marcaba el marco del anteojo a veces como la pupila,27.0,3 recuerdo,35.02,76.34,2 errores,57,6.0,5.0,3.0,15.0
+75,77,mci,,,No Hiba,10/6/2024,16;00,Betsabe ,Anahi,1,90,anteojos,,24.0,3 atencion. 3 recuerdo,102.0,242.16,3 errores,14,4.0,4.0,3.0,12.0
+76,78,control,,,5487875,24/6/2024,14hs,Betsabe,Gustavo/Alejandro,1,70,anteojos,77. 78 y 79 los anote como 78.79 y 80 pero voy a cambiar el nombre para mantener el orden,27.0,2 atencion. 1 recuerdo,43.1,105.47,,54,5.0,4.0,1.0,15.0
+77,79,control,,,No Hiba,24/6/2024,15hs,Betsabe,Gustavo/Alejandro,0,80,anteojos,,28.0,1 atención. 1 recuerdo,51.23,149.0,2 errores,36,4.0,5.0,3.0,12.0
+78,80,mci,DCL amnésico,,720076,24/6/2024,16hs,Betsabe,Gustavo/Alejandro,0,68,anteojos,,25.0,4 orientacion. 1 recuerdo,89.14,226.0,3 errores,30,5.0,5.0,3.0,15.0
+79,81,mci,DCL MD no amnesico,,846108,1/7/2024,13hs,Betsabe,Gustavo/Alejandro,1,74,sin anteojos,La persona tenía dificultades con el uso del mouse. Maculopatia en ojo izquierdo. Vió mal en general.,28.0,2 atencion,77.76,327.0,3 errores,24,7.0,5.0,3.0,7.0
+80,82,mci,DCL MC no amnesico,,81089,1/7/2024,14,Betsabe,Gustavo/Alejandro,1,83,sin anteojos,,24.0,3 atencion. 2 recuerdo. 1 vc,60.0,137.0,1 error,31,7.0,4.0,3.0,12.0
+81,83,control,,,NO Hiba/ Ana,1/7/2024,15hs,Betsabe,Gustavo/Alejandro,1,74,anteojos,,26.0,2 atencion. 2 recuerdo,31.0,69.43,1 error,48,5.0,4.0,3.0,9.0
+82,84,control,,,No HIBA /Blanca,1/7/2024,15hs,Betsabe,Gustavo/Alejandro,1,76,anteojos,,28.0,1 atencion. 1 recuerdo,38.09,103.88,1 error,62,6.0,4.0,3.0,14.0
+83,85,control,,,No Hiba/ Susana,1/7/2024,15hs,Betsabe,Gustavo/Alejandro,1,86,anteojos,Problemas de audición.,27.0,1 atencion. 2 recuerdo,75.62,118.63,--,43,5.0,3.0,3.0,14.0
+84,86,control,,,NO HIBa/ Ana,1/7/2024,15hs,Betsabe,Gustavo/Alejandro,1,81,anteojos,,29.0,1 recuerdo,35.76,72.17,--,48,5.0,4.0,3.0,15.0
+85,87,control,,,No HIBa /Graciela,1/7/2024,15hs,Betsabe,Gustavo/Alejandro,1,80,sin anteojos,,27.0,1 atencion. 2 recuerdo,46.15,83.61,--,42,5.0,3.0,3.0,14.0
+86,88,mci,DCL no amnesico,,4652525,8/7/2024,10hs,Betsabe,Gustavo,0,71,anteojos,,28.0,1atencion. 1 recuerdo,97.0,215.0,--,55,5.0,4.0,3.0,18.0
+87,89,control,,,5851815,8/7/2024,12hs,Betsabe,Gustavo,0,62,anteojos,,27.0,3 recuerdos,28.54,45.48,--,80,7.0,5.0,3.0,18.0
+88,90,control,,,No HIBA /Zulema,15/7/2024,13hs,Betsabe,Gustavo/Alejandro,1,85,anteojos,Grandes dificultades de vista. Le costó mucho ver los puntos de calibración.,28.0,2 recuerdo,112.18,197.0,,22,4.0,3.0,2.0,12.0
+89,91,control,,,No HIBA /Dora,15/7/2024,15hs,Betsabe,Gustavo/Alejandro,1,90,anteojos,,27.0,1 atencion. 2 rec,61.78,169.0,2 errores,25,5.0,4.0,3.0,7.0
+90,92,mci,DCL no amnesico,,1229441,5/8/2024,13:30hs,Betsabe,Alejandro,1,82,anteojos,Figura como 91bis. No veía bien del ojo derecho pero le fue bien en el expermento.,28.0,1 atenc. 1 memoria,60.08,120.04,--,30,6.0,4.0,3.0,12.0
+91,93,mci,DCL MD no amnesico,,No HiBA/Blas,12/8/2024,13hs,Betsabe,Alejandro,0,70,sin anteojos,En mi registro figura que tenía 69 años. El aparato no captaba bien el ojo así que se adelantó la silla y mejoró.,29.0,rec 1,32.0,129.0,,48,8.0,6.0,3.0,12.0
+92,94,mci,DCL no amnesico,,17980,2/9/2024,14hs,Betsabe,Alejandro,1,76,sin anteojos,,26.0,1 atenc. 3 rec. 1 VC,54.1,119.0,1 error,45,6.0,3.0,3.0,18.0
+93,95,control,,,74541,16/9/2024,13hs,Betsabe,Alejandro,1,76,sin anteojos,,30.0,,61.0,124.0,--,38,5.0,4.0,3.0,15.0
+94,96,mci,DCL MD no amnesico - Park,,1416859,7/10/2024,13hs,Betsabe,Alejandro,0,83,anteojos,,24.0,1 OT. 2 atenc. 3 recuerdo,60.0,167.0,,15,6.0,3.0,2.0,10.0
+95,97,mci,DCL no amnesico,,2302423,7/10/2024,13hs,Betsabe,Alejandro,1,75,anteojos,,27.0,1 atenc. 2 recuerdo,38.9,93.7,2 errores,28,7.0,4.0,3.0,12.0
+96,98,mci,DCL no amnesico,,3104154,21/10/2024,13hs,Betsabe,Alejandro,1,70,anteojos,,29.0,1 recuerdo,40.36,140.0,4 errores,46,5.0,4.0,3.0,15.0
+97,99,mci,DCL no amnesico,,2486596,21/10/2024,1:15:00 p.m.,Betsabe,Alejandro,1,71,,,29.0,1 recuerdo,51.8,78.3,,42,6.0,6.0,3.0,18.0
+98,100,control,,,22945,11/11/2024,13hs,Betsabe,Alejandro,0,76,anteojos,,29.0,1 VC,50.42,69.4,-,40,8.0,5.0,3.0,18.0
+99,101,control,,,3715972,11/11/2024,13:30hs,Betsabe,Alejandro,1,71,anteojos,,30.0,,32.0,70.0,,36,5.0,3.0,3.0,18.0
