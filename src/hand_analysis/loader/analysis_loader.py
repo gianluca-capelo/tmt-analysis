@@ -142,7 +142,7 @@ def save_results(
         "test_size": test_size,
         "raw_data_dir": config_file.RAW_DATA_DIR,
         "metadata_path": config_file.METADATA_CSV,
-        "train_subject_ids": train_subject_ids,
+        "train_subject_ids": list(train_subject_ids),
         "eval_subject_ids": eval_subject_ids,
         "is_new_split": split,
         "old_split_config_date": old_split_config_date,
