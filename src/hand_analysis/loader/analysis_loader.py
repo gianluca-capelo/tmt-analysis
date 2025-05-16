@@ -75,8 +75,8 @@ def get_split_ids(eval_size, old_split_config_date, random_state, split, valid_m
     else:
         logging.info("No split performed, using all subjects for training.")
         # Use all subjects for training
-        train_subject_ids = valid_metrics_df['subject_id'].unique()
-        eval_subject_ids = None
+        train_subject_ids = valid_metrics_df['subject_id'].unique().tolist()
+        eval_subject_ids = []
     return train_subject_ids, eval_subject_ids,
 
 
@@ -181,10 +181,18 @@ def main():
     if split:
         eval_size = float(input("Enter evaluation test size (e.g., 0.2): "))
 
-    if not split:
-        old_split_config_date = input("Enter the date of the old split configuration (YYYY-MM-DD_HH-MM-SS): ")
-    else:
-        old_split_config_date = None
+    #get old split config date
+    old_split_config_date = None
+    parser.add_argument(
+        "--old_split_config_date",
+        type=str,
+        help="Date of the old split configuration (YYYY-MM-DD_HH-MM-SS)."
+    )
+    args = parser.parse_args()
+    old_split_config_date = args.old_split_config_date
+
+
+
 
     load_analysis(RANDOM_STATE, eval_size, split, old_split_config_date)
 

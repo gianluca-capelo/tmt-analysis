@@ -24,13 +24,15 @@ LOGGING_CONFIG = {
     'format': '%(asctime)s - %(levelname)s - %(message)s'
 }
 
+FIGURES_DIR = os.path.join(BASE_DIR, "figures")
+
 # Screen parameters
 RADIUS_HEIGHT = 0.05
 
 # TMT parameters
-CORRECT_THRESHOLD = None
+CORRECT_THRESHOLD = None  # 8
 CONSECUTIVE_POINTS = 5
-CUT_CRITERIA = None
+CUT_CRITERIA = None  # "MINIMUM_TARGETS"
 CALCULATE_CROSSES = False
 
 # Subjects classification
