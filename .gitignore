@@ -185,3 +185,6 @@ results/
 
 # Except specific configuration.json files
 !/data/hand_analysis/**/configuration.json
+
+# Models
+notebooks/catboost_info/

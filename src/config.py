@@ -27,7 +27,7 @@ LOGGING_CONFIG = {
 FIGURES_DIR = os.path.join(BASE_DIR, "figures")
 
 # Screen parameters
-RADIUS_HEIGHT = 0.05
+RADIUS_HEIGHT = 0.025
 
 # TMT parameters
 CORRECT_THRESHOLD = None  # 8
