@@ -4,7 +4,7 @@ from typing import Tuple, Dict
 import pandas as pd
 import pyxations as pyx
 from neurotask.tmt.mapper.mapper import TMTMapper
-from neurotask.tmt.metrics.metrics import calculate_distance
+from neurotask.tmt.metrics.distance_calculation import calculate_distance
 from neurotask.tmt.model.tmt_model import *
 
 from src import config
