@@ -194,7 +194,7 @@ def main():
 
 
 
-    load_analysis(RANDOM_STATE, eval_size, split, old_split_config_date)
+    load_analysis(RANDOM_STATE, 1, False, old_split_config_date)
 
 
 if __name__ == "__main__":
