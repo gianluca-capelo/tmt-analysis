@@ -26,8 +26,9 @@ class PsychopyTMTMapper(TMTMapper):
     def map(self, data_path: str, metadata_path: Optional[str] = None) -> TMTExperiment:
 
         # TODO GIAN: Pendiente mapear metadata
-
+        print("data_path:", data_path, "\n\n")
         experiment = pyx.Experiment(dataset_path=data_path)
+        print("experiment.subjects:", experiment.subjects)
 
         subject_ids_list = [str(subject.subject_id) for subject in experiment.subjects]
 
@@ -46,53 +47,58 @@ class PsychopyTMTMapper(TMTMapper):
 
         tmt_subjects: Dict[str, TMTSubject] = {}
 
-        for subject_id in subject_ids:
+        for subject in experiment.subjects:
 
-            subject_id_int = int(subject_id)
+            subject_id_int = int(subject.subject_id)
             if subject_id_int not in config.SUBJECT_GROUP:
-                logging.warning(f"Subject {subject_id} not found in the configuration file.")
+                logging.warning(f"Subject {subject.subject_id} not found in the configuration file.")
                 continue
 
             group = config.SUBJECT_GROUP[subject_id_int]
 
-            logging.info(f"Processing subject: {subject_id}, group: {group}")
+            logging.info(f"Processing subject: {subject.subject_id}, group: {group}")
+            try:
+                # Load the first session data
+                
+                session = subject.sessions[0]
+                session.load_data("eyelink")
 
-            # Load the first session data
-            experiment_index = subject_id_int - 1
-            session = experiment[experiment_index].sessions[0]
-            session.load_data("eyelink")
+                # Extract behavior data
+                df_psychopy = session.behavior_data.iloc[1:-1].reset_index(drop=True)
+                # Map (posArrayX, posArrayY) to a trial_id using config.trial_id_map
+                df_psychopy["trial_id"] = (
+                    df_psychopy
+                    .set_index(["posArrayX", "posArrayY"])
+                    .index.map(config.trial_id_map)
+                    .astype("Int64")
+                )
 
-            # Extract behavior data
-            df_psychopy = session.behavior_data.iloc[1:-1].reset_index(drop=True)
-            # Map (posArrayX, posArrayY) to a trial_id using config.trial_id_map
-            df_psychopy["trial_id"] = (
-                df_psychopy
-                .set_index(["posArrayX", "posArrayY"])
-                .index.map(config.trial_id_map)
-                .astype("Int64")
-            )
+                subject_trials = self.map_to_tmt_trials(df_psychopy)
 
-            subject_trials = self.map_to_tmt_trials(df_psychopy)
+                # Discard trials whose `order_of_appearance` is in rejected_trials
+                rejected_trials = self.get_rejected_trials()
+                valid_subject_trials = [
+                    trial for trial in subject_trials
+                    if trial.order_of_appearance not in rejected_trials
+                ]
 
-            # Discard trials whose `order_of_appearance` is in rejected_trials
-            rejected_trials = self.get_rejected_trials()
-            valid_subject_trials = [
-                trial for trial in subject_trials
-                if trial.order_of_appearance not in rejected_trials
-            ]
+                training_trials = [trial for trial in valid_subject_trials if
+                                trial.order_of_appearance in self.get_training_trials_order()]
 
-            training_trials = [trial for trial in valid_subject_trials if
-                               trial.order_of_appearance in self.get_training_trials_order()]
-
-            # Dice que gus que los mapeemos
-            tmt_subjects[subject_id] = TMTSubject(
-                training_trials=training_trials,
-                testing_trials=valid_subject_trials,
-                target_radius=config.RADIUS_HEIGHT,
-                canvas_size=None,
-                personal_info=mock_personal_info(),
-                session_context=None
-            )
+                # Dice que gus que los mapeemos
+                tmt_subjects[subject.subject_id] = TMTSubject(
+                    training_trials=training_trials,
+                    testing_trials=valid_subject_trials,
+                    target_radius=config.RADIUS_HEIGHT,
+                    canvas_size=None,
+                    personal_info=mock_personal_info(),
+                    session_context=None
+                )
+                print(f"suj {subject.subject_id} mapped")
+            except Exception as e:
+                print(f"{subject.subject_id}: {e}")
+                print(e.format_exc())
+                pass
 
         return TMTExperiment(subjects=tmt_subjects)
 
