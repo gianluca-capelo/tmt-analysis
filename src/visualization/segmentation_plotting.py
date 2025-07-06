@@ -1,77 +1,22 @@
-from matplotlib import pyplot as plt
-from neurotask.tmt.metrics.speed_metrics import calculate_accelerations_between_cursor_positions
-from neurotask.tmt.metrics.speed_metrics import calculate_speeds_between_cursor_positions
-from neurotask.tmt.model.tmt_model import TMTTrial
-
-from neurotask.tmt.segmentation import classify_cursor_positions_with_hesitation
+from typing import Tuple, List
 
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.colors as mcolors
-import numpy as np
+from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo
+from neurotask.tmt.segmentation.segmentation import classify_cursor_positions_with_hesitation
 
-def plot_with_labels(trial: TMTTrial, target_radius: float, labels: list[str]):
-    """
-    Dibuja la trayectoria del cursor de un trial del TMT, coloreando cada segmento
-    según una etiqueta categórica (ej: "TRAVEL", "SEARCH", etc.).
+from src.visualization.trial_plotting_labels import plot_with_labels, plot_with_labels_scatter
 
-    Parameters:
-    - trial: TMTTrial, contiene los targets y la trayectoria del cursor.
-    - target_radius: float, radio de los círculos que rodean los targets.
-    - labels: list[str], una etiqueta por punto de la trayectoria del cursor.
-    """
 
-    # Validar que la cantidad de etiquetas coincida con los puntos de la trayectoria
-    cursor_trail = trial.get_cursor_trail_from_start()
-    if len(labels) != len(cursor_trail):
-        raise ValueError("La cantidad de etiquetas debe coincidir con la cantidad de puntos en la trayectoria del cursor.")
+def plot_segmentation(trial: TMTTrial, target_radius: float, speed_threshold: float):
+    segmentation: List[Tuple[str, CursorInfo]] = classify_cursor_positions_with_hesitation(trial,
+                                                                                           target_radius,
+                                                                                           speed_threshold)
+    segmentation_labels = [label for (label, color) in segmentation]
 
-    # Extraer posiciones de los targets
-    target_x = [target.position.x for target in trial.stimuli]
-    target_y = [target.position.y for target in trial.stimuli]
-    target_contents = [target.content for target in trial.stimuli]
+    title = 'Segmentation'
+    labels_title = 'Segmentation Labels'
+    plot_with_labels(trial, target_radius, segmentation_labels, labels_title=labels_title, title=title)
 
-    # Extraer posiciones del cursor
-    cursor_x = [point.position.x for point in cursor_trail]
-    cursor_y = [point.position.y for point in cursor_trail]
+    plot_with_labels_scatter(trial, target_radius, segmentation_labels, labels_title=labels_title, title=title)
 
-    # Generar colores para cada etiqueta única
-    unique_labels = list(sorted(set(labels)))
-    cmap = plt.get_cmap('tab10') if len(unique_labels) <= 10 else plt.get_cmap('tab20')
-    label_to_color = {label: cmap(i % cmap.N) for i, label in enumerate(unique_labels)}
-
-    # Crear figura
-    fig, ax = plt.subplots(figsize=(8, 8))
-
-    # Dibujar la trayectoria por tramos, coloreados por etiqueta
-    for i in range(len(cursor_x) - 1):
-        label = labels[i]
-        color = label_to_color[label]
-        ax.plot([cursor_x[i], cursor_x[i + 1]],
-                [cursor_y[i], cursor_y[i + 1]],
-                color=color, linewidth=2, zorder=4)
-
-    # Dibujar targets
-    for x, y, content in zip(target_x, target_y, target_contents):
-        circle = plt.Circle((x, y), target_radius, color='red', alpha=0.3, zorder=5)
-        ax.add_patch(circle)
-        ax.text(x, y, content, color='black', fontsize=8, ha='center', va='center', zorder=6)
-
-    # Marcar primer clic
-    if trial.start:
-        fc_x = trial.start.position.x
-        fc_y = trial.start.position.y
-        ax.scatter(fc_x, fc_y, color='cyan', edgecolor='black', s=100, label='First Click', zorder=7,
-                   marker='o', alpha=0.3)
-
-    # Crear leyenda para etiquetas
-    handles = [plt.Line2D([0], [0], color=color, lw=2, label=label) for label, color in label_to_color.items()]
-    ax.legend(handles=handles, title="Etiquetas")
-
-    # Estética
-    ax.set_xlabel('X Position')
-    ax.set_ylabel('Y Position')
-    ax.set_title('Cursor Trail with Categorical Labels')
-    ax.set_aspect('equal', adjustable='box')
-
-    return fig
+    plt.show()
