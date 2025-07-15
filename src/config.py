@@ -27,13 +27,14 @@ LOGGING_CONFIG = {
 FIGURES_DIR = os.path.join(BASE_DIR, "figures")
 
 # Screen parameters
-RADIUS_HEIGHT = 0.0275 # 10% added to original size
+# RADIUS_HEIGHT = 0.0275 # 10% added to original size
+RADIUS_HEIGHT = 0.025
 
 # TMT parameters
 CORRECT_THRESHOLD = 8
 CONSECUTIVE_POINTS = 5
 CUT_CRITERIA = "MINIMUM_TARGETS"
-CALCULATE_CROSSES = False
+CALCULATE_CROSSES = True
 
 # Subjects classification
 SUBJECT_GROUP = {**{i: "control" for i in

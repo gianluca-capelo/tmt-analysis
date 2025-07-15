@@ -2,7 +2,7 @@ import logging
 
 from neurotask.tmt.tmt_analyzer import TMTAnalyzer
 
-import config
+import  config
 from hand_analysis.mapper.psychopy_mapper import PsychopyTMTMapper
 
 
