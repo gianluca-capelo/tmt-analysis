@@ -2,8 +2,8 @@ import logging
 
 from neurotask.tmt.tmt_analyzer import TMTAnalyzer
 
-import  config
-from hand_analysis.mapper.psychopy_mapper import PsychopyTMTMapper
+from src import config
+from src.hand_analysis.mapper.psychopy_mapper import PsychopyTMTMapper
 
 
 def log_and_run_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consecutive_points, cut_criteria):

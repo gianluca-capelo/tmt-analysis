@@ -6,7 +6,8 @@ from typing import Tuple, Union
 
 import pandas as pd
 
-import config as config_file
+#import config as config_file
+from src import config as config_file
 
 
 def load_analysis_by_run_dir(run_dir: Path) -> Tuple[pd.DataFrame, pd.DataFrame]:

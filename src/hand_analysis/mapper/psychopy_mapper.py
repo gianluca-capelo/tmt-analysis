@@ -7,7 +7,7 @@ from neurotask.tmt.mapper.mapper import TMTMapper
 from neurotask.tmt.metrics.distance_calculation import calculate_distance
 from neurotask.tmt.model.tmt_model import *
 
-import config
+from src import config
 
 
 def mock_personal_info():
