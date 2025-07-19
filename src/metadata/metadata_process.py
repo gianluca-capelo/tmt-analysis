@@ -42,7 +42,8 @@ def process_metadata(metadata_df: pd.DataFrame):
 
     process_df["sex"] = process_df["sex"].replace({"F": 1, "M": 0}).astype("Int64")
     process_df["group"] = process_df["group"].str.lower()
-    process_df["group"] = process_df["group"].replace({"caso": "mci", "control": "hc"})
+    process_df["group"] = (process_df["group"]
+                           .replace({"caso": "mci"})) #control lo dejamos como esta
 
     process_df = process_df.replace("Suspendido", 300).replace("No logra", 300)
 
