@@ -5,6 +5,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
+PROCESSED_FOR_MODEL_DIR = os.path.join(DATA_DIR, "processed")
+
+RESULTS_DIR = os.path.join(BASE_DIR, "results")
+
+CLASSIFICATION_RESULTS_DIR = os.path.join(RESULTS_DIR, "classification")
+
 HAND_ANALYSIS_FOLDER = os.path.join(DATA_DIR, "hand_analysis")
 
 ANALYSIS_PATH = os.path.join(DATA_DIR, "hand_analysis", "analysis.csv") 
