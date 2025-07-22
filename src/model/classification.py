@@ -14,7 +14,7 @@ from sklearn.metrics import (
     roc_auc_score, accuracy_score, balanced_accuracy_score,
     precision_score, recall_score, f1_score
 )
-from sklearn.model_selection import GridSearchCV, RepeatedStratifiedKFold, StratifiedKFold, LeaveOneOut
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
@@ -183,9 +183,7 @@ def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n
 
 def get_performance_metrics():
     return [
-        'model', 'repeat', 'fold',
-        'accuracy', 'balanced_accuracy', 'precision',
-        'recall', 'f1', 'auc', 'specificity'
+        'model', 'repeat', 'fold', 'accuracy', 'balanced_accuracy', 'precision', 'recall', 'f1', 'auc', 'specificity'
     ]
 
 
