@@ -46,63 +46,66 @@ def join_and_reorder(df1, df2):
     return df
 
 
+def load_all_datasets() -> dict:
+    path = os.path.join(PROCESSED_FOR_MODEL_DIR)
+    return {
+        'df_digital_tmt_with_target': pd.read_csv(os.path.join(path, 'df_digital_tmt_with_target.csv')),
+        'demographic_df': pd.read_csv(os.path.join(path, 'demographic_df.csv')),
+        'non_digital_df': pd.read_csv(os.path.join(path, 'non_digital_df.csv')),
+        'df_digital_hand_and_eye': pd.read_csv(os.path.join(path, 'df_digital_hand_and_eye.csv')),
+        'digital_test_less_subjects': pd.read_csv(os.path.join(path, 'digital_test_less_subjects.csv')),
+        'non_digital_test_less_subjects': pd.read_csv(os.path.join(path, 'non_digital_test_less_subjects.csv')),
+    }
+
+
 def retrieve_dataset(dataset_name):
-    processed_path = PROCESSED_FOR_MODEL_DIR + '/'
-    # Read data
-    df_digital_tmt_with_target = pd.read_csv(processed_path + 'df_digital_tmt_with_target.csv')
-    demographic_df = pd.read_csv(processed_path + 'demographic_df.csv')
-    non_digital_df = pd.read_csv(processed_path + 'non_digital_df.csv')
-    df_digital_hand_and_eye = pd.read_csv(processed_path + 'df_digital_hand_and_eye.csv')
-    digital_test_less_subjects = pd.read_csv(processed_path + 'digital_test_less_subjects.csv')
-    non_digital_test_less_subjects = pd.read_csv(processed_path + 'non_digital_test_less_subjects.csv')
+    datasets = load_all_datasets()
 
     match dataset_name:
         case 'demographic':
-            X, y, feature_names = extract_X_y_features(demographic_df)
+            df = datasets['demographic_df']
 
         case 'demographic_less_subjects':
-            df = demographic_df.loc[df_digital_hand_and_eye.index]
-            X, y, feature_names = extract_X_y_features(df)
+            df = datasets['demographic_df'].loc[datasets['df_digital_hand_and_eye'].index]
 
         case 'demographic+digital':
-            df = join_and_reorder(df_digital_tmt_with_target, demographic_df)
-            X, y, feature_names = extract_X_y_features(df)
+            df = join_and_reorder(datasets['df_digital_tmt_with_target'], datasets['demographic_df'])
 
         case 'demographic+digital_less':
-            df = join_and_reorder(df_digital_tmt_with_target.loc[df_digital_hand_and_eye.index], demographic_df)
-            X, y, feature_names = extract_X_y_features(df)
+            subset = datasets['df_digital_tmt_with_target'].loc[datasets['df_digital_hand_and_eye'].index]
+            df = join_and_reorder(subset, datasets['demographic_df'])
 
         case 'non_digital_tests':
-            X, y, feature_names = extract_X_y_features(non_digital_df)
+            df = datasets['non_digital_df']
 
         case 'non_digital_tests+demo':
-            df = join_and_reorder(non_digital_df.drop(columns='subject_id'), demographic_df)
-            X, y, feature_names = extract_X_y_features(df)
+            df = join_and_reorder(datasets['non_digital_df'].drop(columns='subject_id'), datasets['demographic_df'])
 
         case 'non_digital_test_less_subjects':
-            X, y, feature_names = extract_X_y_features(non_digital_test_less_subjects)
+            df = datasets['non_digital_test_less_subjects']
 
         case 'non_digital_test_less_subjects+demo':
-            df = join_and_reorder(non_digital_test_less_subjects.drop(columns='subject_id'), demographic_df)
-            X, y, feature_names = extract_X_y_features(df)
+            df = join_and_reorder(
+                datasets['non_digital_test_less_subjects'].drop(columns='subject_id'),
+                datasets['demographic_df']
+            )
 
         case 'digital_test':
-            X, y, feature_names = extract_X_y_features(df_digital_tmt_with_target)
+            df = datasets['df_digital_tmt_with_target']
 
         case 'digital_test_less_subjects':
-            X, y, feature_names = extract_X_y_features(digital_test_less_subjects)
+            df = datasets['digital_test_less_subjects']
 
         case 'hand_and_eye':
-            X, y, feature_names = extract_X_y_features(df_digital_hand_and_eye)
+            df = datasets['df_digital_hand_and_eye']
 
         case 'hand_and_eye_demo':
-            df = join_and_reorder(df_digital_hand_and_eye, demographic_df)
-            X, y, feature_names = extract_X_y_features(df)
+            df = join_and_reorder(datasets['df_digital_hand_and_eye'], datasets['demographic_df'])
 
         case _:
-            raise ValueError(f'Please select a valid dataset')
+            raise ValueError(f"Dataset '{dataset_name}' not recognized.")
 
-    return X, y, feature_names
+    return extract_X_y_features(df)
 
 
 def get_parameter_grid():
