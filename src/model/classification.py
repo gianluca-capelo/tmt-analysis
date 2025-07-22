@@ -1,3 +1,4 @@
+import ast
 import os
 from datetime import datetime
 
@@ -9,6 +10,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    roc_auc_score, accuracy_score, balanced_accuracy_score,
+    precision_score, recall_score, f1_score
+)
 from sklearn.model_selection import GridSearchCV, RepeatedStratifiedKFold, StratifiedKFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -165,25 +170,11 @@ def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n
 
     performance_metrics_df = pd.DataFrame(columns=get_performance_metrics())
 
-    performance_metrics_df = perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca, feature_selection, tune_hyperparameters,
-                             performance_metrics_df, inner_cv_seed, feature_names)
+    performance_metrics_df = perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca,
+                                                      feature_selection, tune_hyperparameters,
+                                                      performance_metrics_df, inner_cv_seed, feature_names)
 
-    # save
-    save_results(dataset_name, feature_selection, perform_pca, performance_metrics_df, tune_hyperparameters)
-
-
-def save_results(dataset_name, feature_selection, perform_pca, performance_metrics_df, tune_hyperparameters):
-    classification_dir = CLASSIFICATION_RESULTS_DIR
-    save_dir = os.path.join(classification_dir, datetime.now().strftime("%Y-%m-%d"))
-
-    os.makedirs(save_dir, exist_ok=True)
-
-    if perform_pca:
-        save_path = f'{save_dir}/{dataset_name}_feature_{feature_selection}_tune={tune_hyperparameters}_LOOCV_PCA_{datetime.now().strftime("%s")[-4:]}.csv'
-    else:
-        save_path = f'{save_dir}/{dataset_name}_feature_{feature_selection}_tune={tune_hyperparameters}_LOOCV_{datetime.now().strftime("%s")[-4:]}.csv'
-
-    performance_metrics_df.to_csv(save_path, index=False)
+    return performance_metrics_df
 
 
 def get_performance_metrics():
@@ -326,6 +317,73 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
     return performance_metrics_df
 
 
+def calculate_metrics_leave_one_out_for_model(df, model_name):
+    model_df = df[df['model'] == model_name]
+    y_true = model_df['y_test'].tolist()
+    y_pred_proba = model_df['y_pred_proba'].tolist()
+    y_pred = model_df['y_pred'].tolist()
+
+    try:
+        auc = roc_auc_score(y_true, y_pred_proba)
+    except ValueError:
+        auc = np.nan
+
+    # Aggregate feature importances across folds
+    importance_agg = {}
+    try:
+        all_importances = [ast.literal_eval(row) for row in model_df['feature_importances'].dropna()]
+        total = len(all_importances)
+        if total > 0:
+            sum_importance = {}
+            for imp in all_importances:
+                for k, v in imp.items():
+                    sum_importance[k] = sum_importance.get(k, 0) + v
+            importance_agg = {k: v / total for k, v in sum_importance.items()}
+    except Exception as e:
+        print(f"⚠️ Error parsing feature importances for {model_name}: {e}")
+        importance_agg = {}
+
+    return pd.DataFrame({
+        'model': [model_name],
+        'auc': [auc],
+        'accuracy': [accuracy_score(y_true, y_pred)],
+        'balanced_accuracy': [balanced_accuracy_score(y_true, y_pred)],
+        'precision': [precision_score(y_true, y_pred, zero_division=0)],
+        'recall': [recall_score(y_true, y_pred, zero_division=0)],
+        'f1': [f1_score(y_true, y_pred, zero_division=0)],
+        'y_true': [y_true],
+        'y_pred_proba': [y_pred_proba],
+        'feature_importances': [importance_agg]
+    })
+
+
+def calculate_metrics_leave_one_out(performance_metrics_df):
+    model_dfs = [
+        calculate_metrics_leave_one_out_for_model(performance_metrics_df, model_name)
+        for model_name in performance_metrics_df['model'].unique()
+    ]
+
+    metrics_global = pd.concat(model_dfs, ignore_index=True)
+
+    return metrics_global
+
+
+def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform_pca, performance_metrics_df,
+                 tune_hyperparameters):
+    classification_dir = CLASSIFICATION_RESULTS_DIR
+    save_dir = os.path.join(classification_dir, datetime.now().strftime("%Y-%m-%d"))
+
+    os.makedirs(save_dir, exist_ok=True)
+
+    if perform_pca:
+        save_path = f'{save_dir}/{dataset_name}_feature_{feature_selection}_tune={tune_hyperparameters}_LOOCV_PCA_{datetime.now().strftime("%s")[-4:]}.csv'
+    else:
+        save_path = f'{save_dir}/{dataset_name}_feature_{feature_selection}_tune={tune_hyperparameters}_LOOCV_{datetime.now().strftime("%s")[-4:]}.csv'
+
+    performance_metrics_df.to_csv(save_path, index=False)
+    leave_one_out_metrics.to_csv(f'{save_dir}/{dataset_name}_leave_one_out.csv', index=False)
+
+
 def main():
     # Example usage
     n_splits = 2
@@ -335,9 +393,12 @@ def main():
     type_of_cv = 'loo'
     tune_hyperparameters = False
     feature_selection = True
-    perform(
-        perform_pca=False,
-        dataset_name='demographic+digital',
+    dataset_name = 'demographic+digital'
+    perform_pca = False
+
+    performance_metrics_df = perform(
+        perform_pca=perform_pca,
+        dataset_name=dataset_name,
         cv_type=type_of_cv,
         n_splits=n_splits,
         n_repeats=n_repeats,
@@ -346,6 +407,11 @@ def main():
         feature_selection=feature_selection,
         tune_hyperparameters=tune_hyperparameters
     )
+
+    leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df)
+
+    save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
+                 tune_hyperparameters)
 
 
 if __name__ == "__main__":
