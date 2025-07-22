@@ -130,16 +130,16 @@ def get_parameter_grid():
     }
 
 
-def get_models():
+def get_models(seed):
     return [
-        RandomForestClassifier(random_state=42, n_jobs=-1),
-        SVC(random_state=42, probability=True, kernel='linear'),
-        LogisticRegression(max_iter=1000, random_state=42, solver='saga', n_jobs=-1),
-        xgb.XGBClassifier(random_state=42, tree_method="hist", eval_metric='logloss', n_jobs=-1)
+        RandomForestClassifier(random_state=seed, n_jobs=-1),
+        SVC(random_state=seed, probability=True, kernel='linear'),
+        LogisticRegression(max_iter=1000, random_state=seed, solver='saga', n_jobs=-1),
+        xgb.XGBClassifier(random_state=seed, tree_method="hist", eval_metric='logloss', n_jobs=-1)
     ]
 
 
-def get_cv(cv_type: str, n_splits: int = 5, n_repeats: int = 10, global_seed: int = 42):
+def get_cv(cv_type: str, n_splits: int, n_repeats: int, global_seed: int):
     match cv_type:
         case 'stratified':
             print(f"RepeatedStratifiedKFold selected with n_splits = {n_splits} and n_repeats = {n_repeats}")
