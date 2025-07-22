@@ -142,12 +142,13 @@ def get_models(seed):
 def get_cv(cv_type: str, n_splits: int, n_repeats: int, global_seed: int):
     match cv_type:
         case 'stratified':
-            print(f"RepeatedStratifiedKFold selected with n_splits = {n_splits} and n_repeats = {n_repeats}")
-            outer_cv = RepeatedStratifiedKFold(
-                n_splits=n_splits,
-                n_repeats=n_repeats,
-                random_state=global_seed  # Global seed
-            )
+            raise NotImplementedError("StratifiedKFold with repeats is not implemented in this version.")
+            # print(f"RepeatedStratifiedKFold selected with n_splits = {n_splits} and n_repeats = {n_repeats}")
+            # outer_cv = RepeatedStratifiedKFold(
+            #     n_splits=n_splits,
+            #     n_repeats=n_repeats,
+            #     random_state=global_seed  # Global seed
+            # )
         case 'loo':
             print("LeaveOneOut selected")
             outer_cv = LeaveOneOut()
@@ -167,7 +168,7 @@ def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n
 
     param_grids = get_parameter_grid()
 
-    models = get_models()
+    models = get_models(global_seed)
 
     outer_cv = get_cv(cv_type, n_splits, n_repeats, global_seed)
 
