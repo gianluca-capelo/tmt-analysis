@@ -226,9 +226,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        # ── Inner CV: estratificado 3-fold con la MISMA semilla por repetición
-        inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
-
         if perform_pca:
             n_components = min(n_components, X_train.shape[1])
             print("n_components:", n_components)
@@ -251,7 +248,11 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             ('classifier', model)
         ])
 
-        if tune_hyperparameters and param_grid:
+        if tune_hyperparameters and param_grid: #TODO GIAN: esta viniendo siempre el param_grid, revisar si deberia ser None
+
+            # ── Inner CV: estratificado 3-fold con la MISMA semilla por repetición
+            inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+
             grid = GridSearchCV(
                 pipeline,
                 param_grid=param_grid,
