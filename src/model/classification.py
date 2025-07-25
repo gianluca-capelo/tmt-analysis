@@ -22,14 +22,16 @@ from sklearn.svm import SVC
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR
 
 
-def extract_X_y_features(df):
+def split_features_and_target(df):
     df = df.drop('subject_id', axis=1)
-    print("group in X", 'group' in df.iloc[:, :-1].columns)
-    print("suj in X", 'subject_id' in df.iloc[:, :-1].columns)
+
     X = df.iloc[:, :-1].values
     y = df.iloc[:, -1].values
+
     feature_names = df.columns[:-1]
+
     assert 'subject_id' not in df.columns, "'subject_id' still in the final dataframe"
+
     return X, y, feature_names
 
 
@@ -105,7 +107,7 @@ def retrieve_dataset(dataset_name):
         case _:
             raise ValueError(f"Dataset '{dataset_name}' not recognized.")
 
-    return extract_X_y_features(df)
+    return split_features_and_target(df)
 
 
 def get_parameter_grid():
@@ -248,7 +250,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             ('classifier', model)
         ])
 
-        if tune_hyperparameters and param_grid: #TODO GIAN: esta viniendo siempre el param_grid, revisar si deberia ser None
+        if tune_hyperparameters and param_grid:  # TODO GIAN: esta viniendo siempre el param_grid, revisar si deberia ser None
 
             # ── Inner CV: estratificado 3-fold con la MISMA semilla por repetición
             inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
