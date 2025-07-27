@@ -106,9 +106,10 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         # Steps
         pca_step = ('pca', PCA(n_components=min(max_pca_components, X_train.shape[1]))) if perform_pca else ('noop',
                                                                                                              'passthrough')
-        select_step = ('select',
-                       SelectKBest(score_func=select_score_func, k=min(max_selected_features, X_train.shape[1]))) \
+        select_step = (
+            ('select', SelectKBest(score_func=select_score_func, k=min(max_selected_features, X_train.shape[1])))
             if feature_selection else ('noop', 'passthrough')
+        )
 
         pipeline = Pipeline([
             ('imputer', SimpleImputer(strategy='mean')),
