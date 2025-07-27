@@ -159,13 +159,10 @@ def get_models(random_state: int):
         xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
     ]
 
-def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n_repeats: int, global_seed: int,
+
+def perform(perform_pca: bool, dataset_name: str, global_seed: int,
             inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool, target_col):
     X, y, feature_names = retrieve_dataset(dataset_name, target_col)
-
-    unique, counts = np.unique(y, return_counts=True)
-
-    logging.info(f"Class distribution:{dict(zip(unique, counts))}")
 
     param_grids = get_parameter_grid()
 
@@ -376,11 +373,8 @@ def main():
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     )
 
-    n_splits = 2
-    n_repeats = 1
     global_seed = 42
     inner_cv_seed = 50  # Fixed for reproducibility in inner CV
-    type_of_cv = 'loo'
     tune_hyperparameters = False
     feature_selection = True
     dataset_name = 'demographic+digital'
@@ -390,9 +384,6 @@ def main():
     performance_metrics_df = perform(
         perform_pca=perform_pca,
         dataset_name=dataset_name,
-        cv_type=type_of_cv,
-        n_splits=n_splits,
-        n_repeats=n_repeats,
         global_seed=global_seed,
         inner_cv_seed=inner_cv_seed,
         feature_selection=feature_selection,

@@ -1,13 +1,16 @@
 import logging
 
-import numpy as np
+import pandas as pd
 import xgboost as xgb
+from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_selection import SelectKBest, f_classif
+from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.model_selection import LeaveOneOut
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
-
-from src.model.classification import retrieve_dataset
 
 
 def get_parameter_grid():
@@ -49,22 +52,89 @@ def get_models(random_state: int):
     ]
 
 
-def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n_repeats: int, global_seed: int,
-            inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool, target_col):
-    X, y, feature_names = retrieve_dataset(dataset_name, target_col)
+def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
+                             tune_hyperparameters: bool, inner_cv_seed: int, feature_names):
+    all_fold_metrics = []
 
-    unique, counts = np.unique(y, return_counts=True)
+    for model in models:
+        model_name = model.__class__.__name__
 
-    logging.info(f"Class distribution:{dict(zip(unique, counts))}")
+        logging.info(f"\n🧪 CV for: {model_name}")
 
-    param_grids = get_parameter_grid()
+        param_grid = param_grids.get(model_name, {})
 
-    models = get_models(global_seed)
+        fold_metrics = perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca,
+                                                          feature_selection,
+                                                          tune_hyperparameters,
+                                                          inner_cv_seed,
+                                                          feature_names)
 
-    outer_cv = LeaveOneOut()
+        all_fold_metrics.extend(fold_metrics)
 
-    performance_metrics_df = perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca,
-                                                      feature_selection, tune_hyperparameters,
-                                                      inner_cv_seed, feature_names)
+    return pd.DataFrame(all_fold_metrics)
 
-    return performance_metrics_df
+
+def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
+                                       tune_hyperparameters: bool, inner_cv_seed: int,
+                                       feature_names):
+    max_pca_components = 4
+    max_selected_features = 20
+    model_name = model.__class__.__name__
+    logging.info(f"\n🧪 CV for: {model_name}")
+
+    fold_metrics = []
+
+    # Enumeramos 'repeat' y 'fold' para guardar en métricas
+    for fold, (train_idx, test_idx) in enumerate(outer_cv.split(X, y)):
+        logging.info(f'Fold number: {fold}')
+
+        X_train, X_test = X[train_idx], X[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+
+        # Steps
+        pca_step = ('pca', PCA(n_components=min(max_pca_components, X_train.shape[1]))) if perform_pca else ('noop',
+                                                                                                             'passthrough')
+        select_step = (
+            ('select', SelectKBest(score_func=f_classif, k=min(max_selected_features, X_train.shape[1])))
+            if feature_selection else ('noop', 'passthrough')
+        )
+
+        pipeline = Pipeline([
+            ('imputer', SimpleImputer(strategy='mean')),
+            select_step,
+            ('scaler', StandardScaler()),
+            pca_step,
+            ('classifier', model)
+        ])
+
+        if tune_hyperparameters and param_grid:
+            inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+            grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring='roc_auc', n_jobs=-1, verbose=0)
+            grid.fit(X_train, y_train)
+            best_model = grid.best_estimator_
+        else:
+            pipeline.fit(X_train, y_train)
+            best_model = pipeline
+
+        # Only compute importance if PCA is OFF
+        if not perform_pca:
+            importance_dict = calculate_feature_importance_for_fold(X_train, best_model, feature_names,
+                                                                    feature_selection, model_name)
+        else:
+            importance_dict = {}
+            logging.info(f"Skipping feature importance for {model_name} in fold {fold} due to PCA.")
+
+        y_pred_proba = best_model.predict_proba(X_test)[:, 1]
+        y_pred = best_model.predict(X_test)
+
+        fold_metrics.append({
+            'model': model_name,
+            'fold': fold,
+            'y_test': y_test[0],
+            'y_pred': y_pred[0],
+            'y_pred_proba': y_pred_proba[0],
+            'feature_importances': importance_dict,
+            'feature_names': feature_names
+        })
+
+    return fold_metrics
