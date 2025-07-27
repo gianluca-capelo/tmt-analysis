@@ -225,8 +225,8 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: b
 def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
                                        tune_hyperparameters: bool, inner_cv_seed: int,
                                        feature_names):
-    min_n_components = 4
-    min_n_features = 20
+    max_n_components = 4
+    max_n_features = 20
     model_name = model.__class__.__name__
     logging.info(f"\n🧪 CV for: {model_name}")
 
