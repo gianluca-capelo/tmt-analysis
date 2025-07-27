@@ -225,56 +225,39 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: b
 def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
                                        tune_hyperparameters: bool, inner_cv_seed: int,
                                        feature_names):
-    max_n_components = 4
-    max_n_features = 20
+    max_pca_components = 4
+    max_selected_features = 20
     model_name = model.__class__.__name__
     logging.info(f"\n🧪 CV for: {model_name}")
 
     fold_metrics = []
-    all_y_true, all_y_pred = [], []
 
     # Enumeramos 'repeat' y 'fold' para guardar en métricas
-    for outer_idx, (train_idx, test_idx) in enumerate(outer_cv.split(X, y)):
-        fold = outer_idx  # index of the left-out observation
-        logging.info(f'Fold number:{fold}')
+    for fold, (train_idx, test_idx) in enumerate(outer_cv.split(X, y)):
+        logging.info(f'Fold number: {fold}')
 
-        # ── Split
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        if perform_pca:
-            n_components = min(max_n_components, X_train.shape[1])
-            pca_step = ('pca', PCA(n_components=n_components))
-        else:
-            pca_step = ('noop', 'passthrough')
-
-        if feature_selection:
-            n_features = min(max_n_features, X_train.shape[1])
-            feature_selection_step = ('select', SelectKBest(score_func=f_classif, k=n_features))
-        else:
-            feature_selection_step = ('noop', 'passthrough')
+        # Steps
+        pca_step = ('pca', PCA(n_components=min(max_pca_components, X_train.shape[1]))) if perform_pca else ('noop',
+                                                                                                             'passthrough')
+        select_step = (
+            ('select', SelectKBest(score_func=f_classif, k=min(max_selected_features, X_train.shape[1])))
+            if feature_selection else ('noop', 'passthrough')
+        )
 
         pipeline = Pipeline([
-            ('imputer', SimpleImputer(strategy='mean')),  # or 'median' depending on your data
-            feature_selection_step,
+            ('imputer', SimpleImputer(strategy='mean')),
+            select_step,
             ('scaler', StandardScaler()),
             pca_step,
             ('classifier', model)
         ])
 
         if tune_hyperparameters and param_grid:
-
-            # ── Inner CV: estratificado 3-fold con la MISMA semilla por repetición
             inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
-
-            grid = GridSearchCV(
-                pipeline,
-                param_grid=param_grid,
-                cv=inner_cv,
-                scoring='roc_auc',
-                n_jobs=-1,
-                verbose=0
-            )
+            grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring='roc_auc', n_jobs=-1, verbose=0)
             grid.fit(X_train, y_train)
             best_model = grid.best_estimator_
         else:
@@ -307,12 +290,8 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             except Exception as e:
                 logging.error(f"❌ Could not extract feature importance for {model_name} in fold {fold}: {e}")
 
-        # ── Predicción
         y_pred_proba = best_model.predict_proba(X_test)[:, 1]
         y_pred = best_model.predict(X_test)
-
-        all_y_true.extend(y_test)
-        all_y_pred.extend(y_pred)
 
         fold_metrics.append({
             'model': model_name,
