@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import defaultdict
 from datetime import datetime
 
 import numpy as np
@@ -350,23 +351,37 @@ def calculate_metrics_leave_one_out_for_model(df, model_name):
 
 
 def calculate_feature_importance(model_df):
-    all_importances = model_df['feature_importances'].dropna().tolist()
+    """
+    Calculates the average importance of each feature across all folds.
 
-    total = len(all_importances)
+    Parameters
+    ----------
+    model_df : pd.DataFrame
+        Must contain a column 'feature_importances' with dicts of feature: importance.
 
-    if total == 0:
+    Returns
+    -------
+    dict
+        A dictionary with features as keys and their average importance as values.
+    """
+
+    feature_importance = model_df['feature_importances'].dropna().tolist()
+
+    if not feature_importance:
         logging.warning("No feature importance found for this model.")
         return {}
 
-    sum_importance = {}
+    sum_importance = defaultdict(float)
 
-    for imp in all_importances:
-        for k, v in imp.items():
-            sum_importance[k] = sum_importance.get(k, 0) + v
+    for feature_dict in feature_importance:
+        for feature, importance in feature_dict.items():
+            sum_importance[feature] += importance
 
-    importance_agg = {k: v / total for k, v in sum_importance.items()}
+    num_folds = len(feature_importance)
 
-    return importance_agg
+    avg_importance = {feature: total_importance / num_folds for feature, total_importance in sum_importance.items()}
+
+    return avg_importance
 
 
 def calculate_metrics_leave_one_out(performance_metrics_df):
