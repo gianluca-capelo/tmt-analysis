@@ -336,12 +336,21 @@ def calculate_metrics_leave_one_out_for_model(df, model_name):
     y_pred_proba = model_df['y_pred_proba'].tolist()
     y_pred = model_df['y_pred'].tolist()
 
-    try:
-        auc = roc_auc_score(y_true, y_pred_proba)
-    except ValueError:
-        auc = np.nan
+    return pd.DataFrame({
+        'model': [model_name],
+        'auc': [roc_auc_score(y_true, y_pred_proba)],
+        'accuracy': [accuracy_score(y_true, y_pred)],
+        'balanced_accuracy': [balanced_accuracy_score(y_true, y_pred)],
+        'precision': [precision_score(y_true, y_pred, zero_division=0)],
+        'recall': [recall_score(y_true, y_pred, zero_division=0)],
+        'f1': [f1_score(y_true, y_pred, zero_division=0)],
+        'y_true': [y_true],
+        'y_pred_proba': [y_pred_proba],
+        'feature_importances': [calculate_feature_importances(model_df, model_name)]
+    })
 
-    # Aggregate feature importances across folds
+
+def calculate_feature_importances(model_df, model_name):
     importance_agg = {}
     try:
         all_importances = [ast.literal_eval(row) for row in model_df['feature_importances'].dropna()]
@@ -352,22 +361,12 @@ def calculate_metrics_leave_one_out_for_model(df, model_name):
                 for k, v in imp.items():
                     sum_importance[k] = sum_importance.get(k, 0) + v
             importance_agg = {k: v / total for k, v in sum_importance.items()}
+
     except Exception as e:
-        logging.error(f"⚠️ Error parsing feature importances for {model_name}: {e}")
+        logging.error(f"Error parsing feature importances for {model_name}: {e}")
         importance_agg = {}
 
-    return pd.DataFrame({
-        'model': [model_name],
-        'auc': [auc],
-        'accuracy': [accuracy_score(y_true, y_pred)],
-        'balanced_accuracy': [balanced_accuracy_score(y_true, y_pred)],
-        'precision': [precision_score(y_true, y_pred, zero_division=0)],
-        'recall': [recall_score(y_true, y_pred, zero_division=0)],
-        'f1': [f1_score(y_true, y_pred, zero_division=0)],
-        'y_true': [y_true],
-        'y_pred_proba': [y_pred_proba],
-        'feature_importances': [importance_agg]
-    })
+    return importance_agg
 
 
 def calculate_metrics_leave_one_out(performance_metrics_df):
