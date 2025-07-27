@@ -200,15 +200,9 @@ def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n
     return performance_metrics_df
 
 
-def get_performance_metrics():
-    return [
-        'model', 'repeat', 'fold', 'accuracy', 'balanced_accuracy', 'precision', 'recall', 'f1', 'auc', 'specificity'
-    ]
-
-
 def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
                              tune_hyperparameters: bool, inner_cv_seed: int, feature_names):
-    performance_metrics_df = pd.DataFrame(columns=get_performance_metrics())
+    all_fold_metrics = []
 
     for model in models:
         model_name = model.__class__.__name__
@@ -223,10 +217,9 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: b
                                                           inner_cv_seed,
                                                           feature_names)
 
-        performance_metrics_df = pd.concat([performance_metrics_df,
-                                            pd.DataFrame(fold_metrics)],
-                                           ignore_index=True)
-    return performance_metrics_df
+        all_fold_metrics.extend(fold_metrics)
+
+    return pd.DataFrame(all_fold_metrics)
 
 
 def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
