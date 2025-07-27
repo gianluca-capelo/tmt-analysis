@@ -265,7 +265,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             best_model = pipeline
 
         # Only compute importance if PCA is OFF
-        importance_dict = {}
         if not perform_pca:
             # Extract pipeline steps
             try:
@@ -289,6 +288,9 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
 
             except Exception as e:
                 logging.error(f"❌ Could not extract feature importance for {model_name} in fold {fold}: {e}")
+        else:
+            importance_dict = {}
+            logging.info(f"Skipping feature importance for {model_name} in fold {fold} due to PCA.")
 
         y_pred_proba = best_model.predict_proba(X_test)[:, 1]
         y_pred = best_model.predict(X_test)
