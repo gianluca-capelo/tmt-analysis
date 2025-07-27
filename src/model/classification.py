@@ -24,27 +24,43 @@ from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR
 
 
 def split_features_and_target(df, target_col):
-    df = df.copy().drop('subject_id', axis=1)
+    df_copy = df.copy().drop('subject_id', axis=1)
 
-    X = df.drop(columns=target_col).values
+    X = df_copy.drop(columns=target_col).values
 
-    y = df[target_col].values
+    y = df_copy[target_col].values
 
-    feature_names = df.drop(columns=target_col).columns
+    feature_names = df_copy.drop(columns=target_col).columns
 
     return X, y, feature_names
 
 
-def join_and_reorder(df1, df2):
-    df = pd.merge(
-        df1,
-        df2.drop(columns='group'),
-        on='subject_id',
-        how='inner'
-    )
-    cols = [col for col in df.columns if col != 'group'] + ['group']
-    df = df[cols]
-    assert df.columns[-1] == 'group', "'group' is not the last column after reordering"
+def join_on_subject_and_move_target_last(df1: pd.DataFrame, df2: pd.DataFrame, target_col) -> pd.DataFrame:
+    """
+    Merge two DataFrames on 'subject_id' and move the target column to the end.
+
+    Args:
+        df1 (pd.DataFrame): First DataFrame, must include 'subject_id' and the target column.
+        df2 (pd.DataFrame): Second DataFrame, will be merged after dropping the target column if present.
+        target_col (str): The name of the target column to move to the end.
+
+    Returns:
+        pd.DataFrame: Merged DataFrame with the target column as the last column.
+    """
+    if target_col not in df1.columns:
+        raise ValueError(f"'{target_col}' must be present in df1 to retain it as the target.")
+
+    # Drop the target column from df2 if it exists to avoid duplication
+    if target_col in df2.columns:
+        df2 = df2.drop(columns=target_col)
+
+    # Perform the merge on subject_id
+    df = pd.merge(df1, df2, on='subject_id', how='inner')
+
+    # Move the target column to the end
+    reordered_cols = [col for col in df.columns if col != target_col] + [target_col]
+    df = df[reordered_cols]
+
     return df
 
 
@@ -71,26 +87,28 @@ def retrieve_dataset(dataset_name, target_col):
             df = datasets['demographic_df'].loc[datasets['df_digital_hand_and_eye'].index]
 
         case 'demographic+digital':
-            df = join_and_reorder(datasets['df_digital_tmt_with_target'], datasets['demographic_df'])
+            df = join_on_subject_and_move_target_last(datasets['df_digital_tmt_with_target'],
+                                                      datasets['demographic_df'], target_col)
 
         case 'demographic+digital_less':
             subset = datasets['df_digital_tmt_with_target'].loc[datasets['df_digital_hand_and_eye'].index]
-            df = join_and_reorder(subset, datasets['demographic_df'])
+            df = join_on_subject_and_move_target_last(subset, datasets['demographic_df'], target_col)
 
         case 'non_digital_tests':
             df = datasets['non_digital_df']
 
         case 'non_digital_tests+demo':
-            df = join_and_reorder(datasets['non_digital_df'].drop(columns='subject_id'), datasets['demographic_df'])
+            df = join_on_subject_and_move_target_last(datasets['non_digital_df'].drop(columns='subject_id'),
+                                                      datasets['demographic_df'], target_col)
 
         case 'non_digital_test_less_subjects':
             df = datasets['non_digital_test_less_subjects']
 
         case 'non_digital_test_less_subjects+demo':
-            df = join_and_reorder(
+            df = join_on_subject_and_move_target_last(
                 datasets['non_digital_test_less_subjects'].drop(columns='subject_id'),
                 datasets['demographic_df']
-            )
+                , target_col)
 
         case 'digital_test':
             df = datasets['df_digital_tmt_with_target']
@@ -102,7 +120,8 @@ def retrieve_dataset(dataset_name, target_col):
             df = datasets['df_digital_hand_and_eye']
 
         case 'hand_and_eye_demo':
-            df = join_and_reorder(datasets['df_digital_hand_and_eye'], datasets['demographic_df'])
+            df = join_on_subject_and_move_target_last(datasets['df_digital_hand_and_eye'], datasets['demographic_df'],
+                                                      target_col)
 
         case _:
             raise ValueError(f"Dataset '{dataset_name}' not recognized.")
