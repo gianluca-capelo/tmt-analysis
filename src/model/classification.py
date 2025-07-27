@@ -217,16 +217,20 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: b
 
         param_grid = param_grids.get(model_name, {})
 
-        performance_metrics_df = perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca,
-                                                                    feature_selection,
-                                                                    tune_hyperparameters, performance_metrics_df,
-                                                                    inner_cv_seed,
-                                                                    feature_names)
+        fold_metrics = perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca,
+                                                          feature_selection,
+                                                          tune_hyperparameters,
+                                                          inner_cv_seed,
+                                                          feature_names)
+
+        performance_metrics_df = pd.concat([performance_metrics_df,
+                                            pd.DataFrame(fold_metrics)],
+                                           ignore_index=True)
     return performance_metrics_df
 
 
 def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
-                                       tune_hyperparameters: bool, performance_metrics_df, inner_cv_seed: int,
+                                       tune_hyperparameters: bool, inner_cv_seed: int,
                                        feature_names):
     model_name = model.__class__.__name__
     logging.info(f"\n🧪 CV for: {model_name}")
@@ -330,12 +334,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             'feature_names': feature_names
         })
 
-    # ── Guardamos métricas
-    performance_metrics_df = pd.concat([performance_metrics_df,
-                                        pd.DataFrame(fold_metrics)],
-                                       ignore_index=True)
-
-    return performance_metrics_df
+    return fold_metrics
 
 
 def calculate_metrics_leave_one_out_for_model(df, model_name):
