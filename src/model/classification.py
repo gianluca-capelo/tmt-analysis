@@ -266,28 +266,8 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
 
         # Only compute importance if PCA is OFF
         if not perform_pca:
-            # Extract pipeline steps
-            try:
-                classifier = best_model.named_steps['classifier']
-                select = best_model.named_steps['select']
-                selected_features = select.get_support(indices=True) if feature_selection else np.arange(
-                    X_train.shape[1])
-                selected_feature_names = feature_names[selected_features]
-
-                if hasattr(classifier, 'feature_importances_'):  # RandomForest, XGBoost
-                    importances = classifier.feature_importances_
-                    importance_dict = dict(zip(selected_feature_names, importances))
-
-                elif model_name == 'LogisticRegression':
-                    importances = np.abs(classifier.coef_).flatten()
-                    importance_dict = dict(zip(selected_feature_names, importances))
-
-                elif model_name == 'SVC' and classifier.kernel == 'linear':
-                    importances = np.abs(classifier.coef_).flatten()
-                    importance_dict = dict(zip(selected_feature_names, importances))
-
-            except Exception as e:
-                logging.error(f"❌ Could not extract feature importance for {model_name} in fold {fold}: {e}")
+            importance_dict = calculate_feature_importance_for_fold(X_train, best_model, feature_names,
+                                                                    feature_selection, model_name)
         else:
             importance_dict = {}
             logging.info(f"Skipping feature importance for {model_name} in fold {fold} due to PCA.")
@@ -306,6 +286,27 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         })
 
     return fold_metrics
+
+
+def calculate_feature_importance_for_fold(X_train, best_model, feature_names, feature_selection, model_name):
+    classifier = best_model.named_steps['classifier']
+    select = best_model.named_steps['select']
+    selected_features = select.get_support(indices=True) if feature_selection else np.arange(
+        X_train.shape[1])
+    selected_feature_names = feature_names[selected_features]
+    if hasattr(classifier, 'feature_importances_'):  # RandomForest, XGBoost
+        importances = classifier.feature_importances_
+        return dict(zip(selected_feature_names, importances))
+
+    elif model_name == 'LogisticRegression':
+        importances = np.abs(classifier.coef_).flatten()
+        return dict(zip(selected_feature_names, importances))
+
+    elif model_name == 'SVC' and classifier.kernel == 'linear':
+        importances = np.abs(classifier.coef_).flatten()
+        return dict(zip(selected_feature_names, importances))
+
+    raise ValueError(f"Model {model_name} does not support feature importance extraction.")
 
 
 def calculate_metrics_leave_one_out_for_model(df, model_name):
