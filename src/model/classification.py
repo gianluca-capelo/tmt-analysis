@@ -230,8 +230,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
     model_name = model.__class__.__name__
     logging.info(f"\n🧪 CV for: {model_name}")
 
-    tprs, aucs, best_params_list, fold_metrics = [], [], [], []
-
+    fold_metrics = []
     all_y_true, all_y_pred = [], []
 
     # Enumeramos 'repeat' y 'fold' para guardar en métricas
@@ -278,11 +277,9 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             )
             grid.fit(X_train, y_train)
             best_model = grid.best_estimator_
-            best_params_list.append(grid.best_params_)
         else:
             pipeline.fit(X_train, y_train)
             best_model = pipeline
-            best_params_list.append("no tuning")
 
         # Only compute importance if PCA is OFF
         importance_dict = {}
