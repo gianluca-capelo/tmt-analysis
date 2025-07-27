@@ -209,8 +209,7 @@ def get_performance_metrics():
 
 
 def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
-                             tune_hyperparameters: bool, performance_metrics_df, inner_cv_seed: int,
-                             feature_names):
+                             tune_hyperparameters: bool, performance_metrics_df, inner_cv_seed: int, feature_names):
     for model in models:
         model_name = model.__class__.__name__
 
