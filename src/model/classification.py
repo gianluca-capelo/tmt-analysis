@@ -24,13 +24,13 @@ from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR
 
 
 def split_features_and_target(df, target_col):
-    df = df.drop('subject_id', axis=1)
+    df = df.copy().drop('subject_id', axis=1)
 
     X = df.drop(columns=target_col).values
-    y = df[target_col].values
-    feature_names = df.drop(columns=target_col).columns
 
-    assert 'subject_id' not in df.columns, "'subject_id' still in the final dataframe"
+    y = df[target_col].values
+
+    feature_names = df.drop(columns=target_col).columns
 
     return X, y, feature_names
 
