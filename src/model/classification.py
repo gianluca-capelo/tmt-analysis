@@ -225,6 +225,8 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: b
 def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
                                        tune_hyperparameters: bool, inner_cv_seed: int,
                                        feature_names):
+    min_n_components = 4
+    min_n_features = 20
     model_name = model.__class__.__name__
     logging.info(f"\n🧪 CV for: {model_name}")
 
@@ -234,8 +236,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
 
     # Enumeramos 'repeat' y 'fold' para guardar en métricas
     for outer_idx, (train_idx, test_idx) in enumerate(outer_cv.split(X, y)):
-        n_features = 20
-        n_components = 4
         fold = outer_idx  # index of the left-out observation
         logging.info(f'Fold number:{fold}')
 
@@ -244,13 +244,13 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         y_train, y_test = y[train_idx], y[test_idx]
 
         if perform_pca:
-            n_components = min(n_components, X_train.shape[1])
+            n_components = min(min_n_components, X_train.shape[1])
             pca_step = ('pca', PCA(n_components=n_components))
         else:
             pca_step = ('noop', 'passthrough')
 
         if feature_selection:
-            n_features = min(n_features, X_train.shape[1])
+            n_features = min(min_n_features, X_train.shape[1])
             feature_selection_step = ('select', SelectKBest(score_func=f_classif, k=n_features))
         else:
             feature_selection_step = ('noop', 'passthrough')
@@ -263,7 +263,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             ('classifier', model)
         ])
 
-        if tune_hyperparameters and param_grid:  # TODO GIAN: esta viniendo siempre el param_grid, revisar si deberia ser None
+        if tune_hyperparameters and param_grid:
 
             # ── Inner CV: estratificado 3-fold con la MISMA semilla por repetición
             inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
