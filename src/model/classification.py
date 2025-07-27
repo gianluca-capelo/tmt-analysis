@@ -159,26 +159,6 @@ def get_models(random_state: int):
         xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
     ]
 
-
-def get_cross_validator(cv_type: str, n_splits: int, n_repeats: int, global_seed: int):
-    match cv_type:
-        case 'stratified':
-            raise NotImplementedError("StratifiedKFold with repeats is not implemented in this version.")
-            # print(f"RepeatedStratifiedKFold selected with n_splits = {n_splits} and n_repeats = {n_repeats}")
-            # outer_cv = RepeatedStratifiedKFold(
-            #     n_splits=n_splits,
-            #     n_repeats=n_repeats,
-            #     random_state=global_seed  # Global seed
-            # )
-        case 'loo':
-            logging.info("LeaveOneOut selected")
-            outer_cv = LeaveOneOut()
-        case _:
-            raise ValueError(f"Invalid cv_type: {cv_type}. Choose 'stratified' or 'loo'.")
-
-    return outer_cv
-
-
 def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n_repeats: int, global_seed: int,
             inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool, target_col):
     X, y, feature_names = retrieve_dataset(dataset_name, target_col)
@@ -191,7 +171,7 @@ def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n
 
     models = get_models(global_seed)
 
-    outer_cv = get_cross_validator(cv_type, n_splits, n_repeats, global_seed)
+    outer_cv = LeaveOneOut()
 
     performance_metrics_df = perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca,
                                                       feature_selection, tune_hyperparameters,
