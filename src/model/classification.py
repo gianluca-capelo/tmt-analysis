@@ -1,4 +1,3 @@
-import ast
 import logging
 import os
 from datetime import datetime
@@ -355,21 +354,20 @@ def calculate_feature_importances(model_df):
 
     total = len(all_importances)
 
-    importance_agg = {}
+    if total == 0:
+        logging.warning("No feature importance found for this model.")
+        return {}
 
-    if total > 0:
+    sum_importance = {}
 
-        sum_importance = {}
+    for imp in all_importances:
 
-        for imp in all_importances:
+        for k, v in imp.items():
+            sum_importance[k] = sum_importance.get(k, 0) + v
 
-            for k, v in imp.items():
-                sum_importance[k] = sum_importance.get(k, 0) + v
-
-        importance_agg = {k: v / total for k, v in sum_importance.items()}
+    importance_agg = {k: v / total for k, v in sum_importance.items()}
 
     return importance_agg
-
 
 
 def calculate_metrics_leave_one_out(performance_metrics_df):
