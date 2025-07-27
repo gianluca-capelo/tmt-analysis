@@ -144,7 +144,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             'y_test': y_test[0],
             'y_pred': y_pred[0],
             'y_pred_proba': y_pred_proba[0] if y_pred_proba is not None else None,
-            'feature_importances': None,  # TODO GIAN: CALCULAR
+            'feature_importances': importance_dict,
             'feature_names': feature_names
         })
 
