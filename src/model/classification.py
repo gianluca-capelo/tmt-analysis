@@ -365,19 +365,19 @@ def calculate_feature_importance(model_df):
         A dictionary with features as keys and their average importance as values.
     """
 
-    feature_importance = model_df['feature_importances'].dropna().tolist()
+    feature_importances = model_df['feature_importances'].dropna().tolist()
 
-    if not feature_importance:
+    if not feature_importances:
         logging.warning("No feature importance found for this model.")
         return {}
 
     sum_importance = defaultdict(float)
 
-    for feature_dict in feature_importance:
+    for feature_dict in feature_importances:
         for feature, importance in feature_dict.items():
             sum_importance[feature] += importance
 
-    num_folds = len(feature_importance)
+    num_folds = len(feature_importances)
 
     avg_importance = {feature: total_importance / num_folds for feature, total_importance in sum_importance.items()}
 
