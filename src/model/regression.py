@@ -4,13 +4,15 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
+
+from src.model.classification import calculate_feature_importance_for_fold
 
 
 def get_parameter_grid():
@@ -104,7 +106,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         # Steps
         pca_step = ('pca', PCA(n_components=min(max_pca_components, X_train.shape[1]))) if perform_pca else ('noop',
                                                                                                              'passthrough')
-
         select_step = ('select',
                        SelectKBest(score_func=select_score_func, k=min(max_selected_features, X_train.shape[1]))) \
             if feature_selection else ('noop', 'passthrough')
@@ -120,7 +121,8 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         if tune_hyperparameters and param_grid:
             inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed) if is_classification \
                 else (KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed))
-            grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring='r2', n_jobs=-1, verbose=0)
+            scoring = 'roc_auc' if is_classification else 'r2'
+            grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1, verbose=0)
             grid.fit(X_train, y_train)
             best_model = grid.best_estimator_
         else:
