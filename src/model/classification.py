@@ -291,9 +291,9 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
 def calculate_feature_importance_for_fold(X_train, best_model, feature_names, feature_selection, model_name):
     classifier = best_model.named_steps['classifier']
     select = best_model.named_steps['select']
-    selected_features = select.get_support(indices=True) if feature_selection else np.arange(
-        X_train.shape[1])
+    selected_features = select.get_support(indices=True) if feature_selection else np.arange(X_train.shape[1])
     selected_feature_names = feature_names[selected_features]
+
     if hasattr(classifier, 'feature_importances_'):  # RandomForest, XGBoost
         importances = classifier.feature_importances_
         return dict(zip(selected_feature_names, importances))
