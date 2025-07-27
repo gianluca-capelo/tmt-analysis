@@ -345,11 +345,11 @@ def calculate_metrics_leave_one_out_for_model(df, model_name):
         'f1': [f1_score(y_true, y_pred, zero_division=0)],
         'y_true': [y_true],
         'y_pred_proba': [y_pred_proba],
-        'feature_importances': [calculate_feature_importances(model_df)]
+        'feature_importances': [calculate_feature_importance(model_df)]
     })
 
 
-def calculate_feature_importances(model_df):
+def calculate_feature_importance(model_df):
     all_importances = model_df['feature_importances'].dropna().tolist()
 
     total = len(all_importances)
@@ -361,7 +361,6 @@ def calculate_feature_importances(model_df):
     sum_importance = {}
 
     for imp in all_importances:
-
         for k, v in imp.items():
             sum_importance[k] = sum_importance.get(k, 0) + v
 
