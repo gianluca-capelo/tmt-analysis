@@ -346,27 +346,30 @@ def calculate_metrics_leave_one_out_for_model(df, model_name):
         'f1': [f1_score(y_true, y_pred, zero_division=0)],
         'y_true': [y_true],
         'y_pred_proba': [y_pred_proba],
-        'feature_importances': [calculate_feature_importances(model_df, model_name)]
+        'feature_importances': [calculate_feature_importances(model_df)]
     })
 
 
-def calculate_feature_importances(model_df, model_name):
-    importance_agg = {}
-    try:
-        all_importances = [ast.literal_eval(row) for row in model_df['feature_importances'].dropna()]
-        total = len(all_importances)
-        if total > 0:
-            sum_importance = {}
-            for imp in all_importances:
-                for k, v in imp.items():
-                    sum_importance[k] = sum_importance.get(k, 0) + v
-            importance_agg = {k: v / total for k, v in sum_importance.items()}
+def calculate_feature_importances(model_df):
+    all_importances = model_df['feature_importances'].dropna().tolist()
 
-    except Exception as e:
-        logging.error(f"Error parsing feature importances for {model_name}: {e}")
-        importance_agg = {}
+    total = len(all_importances)
+
+    importance_agg = {}
+
+    if total > 0:
+
+        sum_importance = {}
+
+        for imp in all_importances:
+
+            for k, v in imp.items():
+                sum_importance[k] = sum_importance.get(k, 0) + v
+
+        importance_agg = {k: v / total for k, v in sum_importance.items()}
 
     return importance_agg
+
 
 
 def calculate_metrics_leave_one_out(performance_metrics_df):
