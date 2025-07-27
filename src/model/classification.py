@@ -193,11 +193,9 @@ def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n
 
     outer_cv = get_cross_validator(cv_type, n_splits, n_repeats, global_seed)
 
-    performance_metrics_df = pd.DataFrame(columns=get_performance_metrics())
-
     performance_metrics_df = perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca,
                                                       feature_selection, tune_hyperparameters,
-                                                      performance_metrics_df, inner_cv_seed, feature_names)
+                                                      inner_cv_seed, feature_names)
 
     return performance_metrics_df
 
@@ -209,7 +207,9 @@ def get_performance_metrics():
 
 
 def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
-                             tune_hyperparameters: bool, performance_metrics_df, inner_cv_seed: int, feature_names):
+                             tune_hyperparameters: bool, inner_cv_seed: int, feature_names):
+    performance_metrics_df = pd.DataFrame(columns=get_performance_metrics())
+
     for model in models:
         model_name = model.__class__.__name__
 
