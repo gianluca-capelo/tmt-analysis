@@ -1,4 +1,5 @@
 import ast
+import logging
 import os
 from datetime import datetime
 
@@ -22,13 +23,12 @@ from sklearn.svm import SVC
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR
 
 
-def split_features_and_target(df):
+def split_features_and_target(df, target_col):
     df = df.drop('subject_id', axis=1)
 
-    X = df.iloc[:, :-1].values
-    y = df.iloc[:, -1].values
-
-    feature_names = df.columns[:-1]
+    X = df.drop(columns=target_col).values
+    y = df[target_col].values
+    feature_names = df.drop(columns=target_col).columns
 
     assert 'subject_id' not in df.columns, "'subject_id' still in the final dataframe"
 
@@ -60,7 +60,7 @@ def load_all_datasets() -> dict:
     }
 
 
-def retrieve_dataset(dataset_name):
+def retrieve_dataset(dataset_name, target_col):
     datasets = load_all_datasets()
 
     match dataset_name:
@@ -107,7 +107,7 @@ def retrieve_dataset(dataset_name):
         case _:
             raise ValueError(f"Dataset '{dataset_name}' not recognized.")
 
-    return split_features_and_target(df)
+    return split_features_and_target(df, target_col)
 
 
 def get_parameter_grid():
@@ -152,7 +152,7 @@ def get_cv(cv_type: str, n_splits: int, n_repeats: int, global_seed: int):
             #     random_state=global_seed  # Global seed
             # )
         case 'loo':
-            print("LeaveOneOut selected")
+            logging.info("LeaveOneOut selected")
             outer_cv = LeaveOneOut()
         case _:
             raise ValueError(f"Invalid cv_type: {cv_type}. Choose 'stratified' or 'loo'.")
@@ -161,12 +161,12 @@ def get_cv(cv_type: str, n_splits: int, n_repeats: int, global_seed: int):
 
 
 def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n_repeats: int, global_seed: int,
-            inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool):
-    X, y, feature_names = retrieve_dataset(dataset_name)
+            inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool, target_col):
+    X, y, feature_names = retrieve_dataset(dataset_name, target_col)
 
     unique, counts = np.unique(y, return_counts=True)
 
-    print("Class distribution:", dict(zip(unique, counts)))
+    logging.info(f"Class distribution:{dict(zip(unique, counts))}")
 
     param_grids = get_parameter_grid()
 
@@ -195,7 +195,7 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: b
     for model in models:
         model_name = model.__class__.__name__
 
-        print(f"\n🧪 CV for: {model_name}")
+        logging.info(f"\n🧪 CV for: {model_name}")
 
         param_grid = param_grids.get(model_name, {})
 
@@ -211,7 +211,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
                                        tune_hyperparameters: bool, performance_metrics_df, inner_cv_seed: int,
                                        feature_names):
     model_name = model.__class__.__name__
-    print(f"\n🧪 CV for: {model_name}")
+    logging.info(f"\n🧪 CV for: {model_name}")
 
     tprs, aucs, best_params_list, fold_metrics = [], [], [], []
 
@@ -222,7 +222,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         n_features = 20
         n_components = 4
         fold = outer_idx  # index of the left-out observation
-        print('fold:', fold)
+        logging.info(f'Fold number:{fold}')
 
         # ── Split
         X_train, X_test = X[train_idx], X[test_idx]
@@ -230,14 +230,14 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
 
         if perform_pca:
             n_components = min(n_components, X_train.shape[1])
-            print("n_components:", n_components)
+            logging.info(f"n_components:{n_components}")
             pca_step = ('pca', PCA(n_components=n_components))
         else:
             pca_step = ('noop', 'passthrough')
 
         if feature_selection:
             n_features = min(n_features, X_train.shape[1])
-            print("n_features:", n_features)
+            logging.info(f"n_features:{n_features}")
             feature_selection_step = ('select', SelectKBest(score_func=f_classif, k=n_features))
         else:
             feature_selection_step = ('noop', 'passthrough')
@@ -295,7 +295,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
                     importance_dict = dict(zip(selected_feature_names, importances))
 
             except Exception as e:
-                print(f"❌ Could not extract feature importance for {model_name} in fold {fold}: {e}")
+                logging.error(f"❌ Could not extract feature importance for {model_name} in fold {fold}: {e}")
 
         # ── Predicción
         y_pred_proba = best_model.predict_proba(X_test)[:, 1]
@@ -311,7 +311,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             'y_pred': y_pred[0],
             'y_pred_proba': y_pred_proba[0],
             'feature_importances': importance_dict,
-            'feature_names': feature_names.values
+            'feature_names': feature_names
         })
 
     # ── Guardamos métricas
@@ -345,7 +345,7 @@ def calculate_metrics_leave_one_out_for_model(df, model_name):
                     sum_importance[k] = sum_importance.get(k, 0) + v
             importance_agg = {k: v / total for k, v in sum_importance.items()}
     except Exception as e:
-        print(f"⚠️ Error parsing feature importances for {model_name}: {e}")
+        logging.error(f"⚠️ Error parsing feature importances for {model_name}: {e}")
         importance_agg = {}
 
     return pd.DataFrame({
@@ -390,6 +390,11 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    )
+
     # Example usage
     n_splits = 2
     n_repeats = 1
@@ -400,6 +405,7 @@ def main():
     feature_selection = True
     dataset_name = 'demographic+digital'
     perform_pca = False
+    target_col = 'group'
 
     performance_metrics_df = perform(
         perform_pca=perform_pca,
@@ -410,7 +416,8 @@ def main():
         global_seed=global_seed,
         inner_cv_seed=inner_cv_seed,
         feature_selection=feature_selection,
-        tune_hyperparameters=tune_hyperparameters
+        tune_hyperparameters=tune_hyperparameters,
+        target_col=target_col
     )
 
     leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df)
