@@ -107,8 +107,8 @@ def retrieve_dataset(dataset_name, target_col):
         case 'non_digital_test_less_subjects+demo':
             df = join_on_subject_and_move_target_last(
                 datasets['non_digital_test_less_subjects'].drop(columns='subject_id'),
-                datasets['demographic_df']
-                , target_col)
+                datasets['demographic_df'],
+                target_col)
 
         case 'digital_test':
             df = datasets['df_digital_tmt_with_target']
@@ -151,16 +151,16 @@ def get_parameter_grid():
     }
 
 
-def get_models(seed):
+def get_models(random_state: int):
     return [
-        RandomForestClassifier(random_state=seed, n_jobs=-1),
-        SVC(random_state=seed, probability=True, kernel='linear'),
-        LogisticRegression(max_iter=1000, random_state=seed, solver='saga', n_jobs=-1),
-        xgb.XGBClassifier(random_state=seed, tree_method="hist", eval_metric='logloss', n_jobs=-1)
+        RandomForestClassifier(random_state=random_state, n_jobs=-1),
+        SVC(random_state=random_state, probability=True, kernel='linear'),
+        LogisticRegression(max_iter=1000, random_state=random_state, solver='saga', n_jobs=-1),
+        xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
     ]
 
 
-def get_cv(cv_type: str, n_splits: int, n_repeats: int, global_seed: int):
+def get_cross_validator(cv_type: str, n_splits: int, n_repeats: int, global_seed: int):
     match cv_type:
         case 'stratified':
             raise NotImplementedError("StratifiedKFold with repeats is not implemented in this version.")
@@ -191,7 +191,7 @@ def perform(perform_pca: bool, dataset_name: str, cv_type: str, n_splits: int, n
 
     models = get_models(global_seed)
 
-    outer_cv = get_cv(cv_type, n_splits, n_repeats, global_seed)
+    outer_cv = get_cross_validator(cv_type, n_splits, n_repeats, global_seed)
 
     performance_metrics_df = pd.DataFrame(columns=get_performance_metrics())
 
