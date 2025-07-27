@@ -244,13 +244,13 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         y_train, y_test = y[train_idx], y[test_idx]
 
         if perform_pca:
-            n_components = min(min_n_components, X_train.shape[1])
+            n_components = min(max_n_components, X_train.shape[1])
             pca_step = ('pca', PCA(n_components=n_components))
         else:
             pca_step = ('noop', 'passthrough')
 
         if feature_selection:
-            n_features = min(min_n_features, X_train.shape[1])
+            n_features = min(max_n_features, X_train.shape[1])
             feature_selection_step = ('select', SelectKBest(score_func=f_classif, k=n_features))
         else:
             feature_selection_step = ('noop', 'passthrough')
