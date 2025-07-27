@@ -403,7 +403,6 @@ def main():
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     )
 
-    # Example usage
     n_splits = 2
     n_repeats = 1
     global_seed = 42
