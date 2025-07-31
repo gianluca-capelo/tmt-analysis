@@ -28,9 +28,9 @@ class PsychopyTMTMapper(TMTMapper):
         # TODO GIAN: Pendiente mapear metadata
         print("data_path:", data_path, "\n\n")
         experiment = pyx.Experiment(dataset_path=data_path)
-        print("experiment.subjects:", experiment.subjects)
+        print("experiment.subjects:", experiment.subjects.keys())
 
-        subject_ids_list = [str(subject.subject_id) for subject in experiment.subjects]
+        subject_ids_list = [str(subject_id) for subject_id in experiment.subjects.keys()]
 
         # Convert subject_ids to strings and fill with zeros for BIDS standard
         subject_ids = [str(s).zfill(4) for s in subject_ids_list]
@@ -47,24 +47,24 @@ class PsychopyTMTMapper(TMTMapper):
 
         tmt_subjects: Dict[str, TMTSubject] = {}
 
-        for subject in experiment.subjects:
+        for subject_id, subject in experiment.subjects.items():
 
-            subject_id_int = int(subject.subject_id)
+            subject_id_int = int(subject_id)
             if subject_id_int not in config.SUBJECT_GROUP:
-                logging.warning(f"Subject {subject.subject_id} not found in the configuration file.")
+                logging.warning(f"Subject {subject_id} not found in the configuration file.")
                 continue
 
             group = config.SUBJECT_GROUP[subject_id_int]
 
-            logging.info(f"Processing subject: {subject.subject_id}, group: {group}")
+            logging.info(f"Processing subject: {subject_id}, group: {group}")
             try:
                 # Load the first session data
-                
-                session = subject.sessions[0]
+                print(subject.sessions.keys())
+                session = subject.sessions['experimento']
                 session.load_data("eyelink")
 
                 # Extract behavior data
-                df_psychopy = session.behavior_data.iloc[1:-1].reset_index(drop=True)
+                df_psychopy = session.load_behavior_data().iloc[1:-1].reset_index(drop=True)
                 # Map (posArrayX, posArrayY) to a trial_id using config.trial_id_map
                 df_psychopy["trial_id"] = (
                     df_psychopy
@@ -96,9 +96,10 @@ class PsychopyTMTMapper(TMTMapper):
                 )
                 print(f"suj {subject.subject_id} mapped")
             except Exception as e:
-                print(f"{subject.subject_id}: {e}")
-                print(e.format_exc())
-                pass
+                logging.error(f"{subject.subject_id}: {e}")
+                raise e
+                break
+                #print(e.format_exc())
 
         return TMTExperiment(subjects=tmt_subjects)
 
