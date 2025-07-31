@@ -1,4 +1,5 @@
 import logging
+from types import MethodType
 from typing import Tuple, Dict
 
 import pandas as pd
@@ -9,6 +10,15 @@ from neurotask.tmt.model.tmt_model import *
 
 from src import config
 
+
+def load_behavior_data_csv(self):
+    behavior_path = self.session_dataset_path / "behavioral"
+    if behavior_path.exists() and len(list(behavior_path.glob("*.csv"))) == 1:
+        behavior_file = next(behavior_path.glob("*.csv"))
+        self.behavior_data = pd.read_csv(behavior_file)
+        print(f"Behavior data cargado desde {behavior_file}")
+    else:
+        raise FileNotFoundError("No se encontró un archivo .csv único en la carpeta de comportamiento.")
 
 def mock_personal_info():
     return SubjectPersonalInformation(
@@ -39,6 +49,7 @@ class PsychopyTMTMapper(TMTMapper):
 
         return experiment
 
+
     def map_experiment(self, experiment: pyx.Experiment, subject_ids: List[str]) -> TMTExperiment:
         # TODO GUS: excluirlos
         # bad_mouse_subjects = {25}
@@ -63,8 +74,14 @@ class PsychopyTMTMapper(TMTMapper):
                 session = subject.sessions['experimento']
                 session.load_data("eyelink")
 
+                session.load_behavior_data = MethodType(load_behavior_data_csv, session)
+                session.load_behavior_data()
                 # Extract behavior data
-                df_psychopy = session.load_behavior_data().iloc[1:-1].reset_index(drop=True)
+                df_psychopy = session.behavior_data.iloc[1:-1].reset_index(drop=True)
+                #if self.behavior_path.exists() and len(list(self.behavior_path.glob("*.csv"))) == 1:
+                 #   behavior_data = pd.read_csv(next(self.behavior_path.glob("*.csv")))
+                  #  self.behavior_data = behavior_data
+
                 # Map (posArrayX, posArrayY) to a trial_id using config.trial_id_map
                 df_psychopy["trial_id"] = (
                     df_psychopy
