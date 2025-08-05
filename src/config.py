@@ -122,4 +122,5 @@ trial_id_map = {(
 # 75:, 33 and 56: bad signal,
 # 80 and 96 not complete at least 1 trials to the 12 item,
 # 96 has Parkinson
-MANUAL_REJECTED_SUBJECTS = {25, 32, 33, 56, 75, 80, 96}
+# 55 and 71: additional subjects to exclude from analysis
+MANUAL_REJECTED_SUBJECTS = {25, 32, 33, 55, 56, 71, 75, 80, 96}

@@ -45,11 +45,11 @@ def load_analysis(random_state: int,
                                                         valid_metrics_df)
 
     # 4) Save results and metadata
-    save_results(valid_metrics_df, run_dir, timestamp, random_state, eval_size, train_subject_ids, eval_subject_ids,
+    save_path = save_results(valid_metrics_df, run_dir, timestamp, random_state, eval_size, train_subject_ids, eval_subject_ids,
                  split,
                  old_split_config_date)
 
-    return valid_metrics_df
+    return valid_metrics_df, save_path
 
 
 def get_split_ids(eval_size, old_split_config_date, random_state, split, valid_metrics_df):
@@ -165,6 +165,8 @@ def save_results(
     except IOError as e:
         logging.error("Failed to write analysis CSV: %s", e)
 
+    return data_path
+
 
 def run_analysis():
     import argparse
@@ -175,14 +177,6 @@ def run_analysis():
         action="store_true",
         help="Perform a split of the dataset into train and evaluation sets."
     )
-    args = parser.parse_args()
-    split = args.split
-    eval_size = None
-    if split:
-        eval_size = float(input("Enter evaluation test size (e.g., 0.2): "))
-
-    #get old split config date
-    old_split_config_date = None
     parser.add_argument(
         "--old_split_config_date",
         type=str,
@@ -190,9 +184,6 @@ def run_analysis():
     )
     args = parser.parse_args()
     old_split_config_date = args.old_split_config_date
-
-
-
 
     load_analysis(RANDOM_STATE, 1, False, old_split_config_date)
 
