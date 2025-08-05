@@ -3,6 +3,7 @@ from src.data_processing.filter_data_with_last_date import filter_data_with_last
 from src.data_processing.mock_subjects import mock_subjects
 from src.data_processing.process import process_data
 from src.data_processing.remove_placeholders import remove_placeholders
+from src.hand_analysis.loader.analysis_loader import run_analysis
 
 # Remove all placeholders
 no_placeholders_dir = config.RAW_WITH_NO_PLACEHOLDERS_DIR
@@ -19,3 +20,5 @@ filter_data_with_last_date(no_placeholders_dir, filtered_by_date_dir)
 
 # Process the data to convert it to BIDS format and compute derivatives
 process_data(source_path=filtered_by_date_dir)
+
+run_analysis()
