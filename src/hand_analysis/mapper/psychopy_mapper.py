@@ -111,12 +111,10 @@ class PsychopyTMTMapper(TMTMapper):
                     personal_info=mock_personal_info(),
                     session_context=None
                 )
-                print(f"suj {subject.subject_id} mapped")
-            except Exception as e:
-                logging.error(f"{subject.subject_id}: {e}")
-                raise e
-                break
-                #print(e.format_exc())
+                logging.info(f"Mapped subject {subject.subject_id} with {len(valid_subject_trials)} valid trials.")
+            except Exception as exception:
+                logging.error(f"{subject.subject_id}: {exception}")
+                raise exception
 
         return TMTExperiment(subjects=tmt_subjects)
 
