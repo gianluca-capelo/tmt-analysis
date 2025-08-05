@@ -166,7 +166,7 @@ def save_results(
         logging.error("Failed to write analysis CSV: %s", e)
 
 
-def main():
+def run_analysis():
     import argparse
 
     parser = argparse.ArgumentParser(description="Run hand analysis.")
@@ -198,4 +198,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_analysis()
