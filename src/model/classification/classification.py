@@ -36,15 +36,17 @@ def get_target_column(target_col, df):
 
 
 def split_features_and_target(df, target_col):
-    df_copy = df.copy().drop('subject_id', axis=1)
+    df_copy = df.copy()
 
-    X = df_copy.drop(columns=target_col).values
+    if target_col in df_copy.columns:
+        y = df_copy[target_col].values
+        df_copy = df_copy.drop(columns=['subject_id', target_col])
+    else:
+        y = get_target_column(target_col, df_copy)
+        df_copy = df_copy.drop(columns=['subject_id'])
 
-    y = df_copy[target_col].values \
-        if target_col in df.columns \
-        else get_target_column(target_col, df)
-
-    feature_names = df_copy.drop(columns=target_col).columns
+    X = df_copy.values
+    feature_names = df_copy.columns
 
     return X, y, feature_names
 
