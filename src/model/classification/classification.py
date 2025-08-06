@@ -24,6 +24,9 @@ from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR
 
 
 def split_features_and_target(df, target_col):
+    if target_col not in df.columns:
+        raise ValueError(f"Target column '{target_col}' not found in DataFrame.")
+
     df_copy = df.copy().drop('subject_id', axis=1)
 
     X = df_copy.drop(columns=target_col).values
@@ -115,10 +118,6 @@ def retrieve_dataset(dataset_name, target_col):
 
         case _:
             raise ValueError(f"Dataset '{dataset_name}' not recognized.")
-
-        # Move the target column to the end
-    reordered_cols = [col for col in df.columns if col != target_col] + [target_col]
-    df = df[reordered_cols]
 
     return split_features_and_target(df, target_col)
 
