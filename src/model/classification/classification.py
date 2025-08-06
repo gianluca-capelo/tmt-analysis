@@ -43,24 +43,18 @@ def join_on_subject(df1: pd.DataFrame, df2: pd.DataFrame, target_col) -> pd.Data
     Merge two DataFrames on 'subject_id'.
 
     Args:
-        df1 (pd.DataFrame): First DataFrame, must include 'subject_id' and the target column.
-        df2 (pd.DataFrame): Second DataFrame, will be merged after dropping the target column if present.
+        df1 (pd.DataFrame): First DataFrame, must include 'subject_id'.
+        df2 (pd.DataFrame): Second DataFrame, will be merged after dropping the target column if present in both.
         target_col (str): The name of the target column.
 
     Returns:
         pd.DataFrame: Merged DataFrame.
     """
-    if target_col not in df1.columns:
-        raise ValueError(f"'{target_col}' must be present in df1 to retain it as the target.")
 
-    # Drop the target column from df2 if it exists to avoid duplication
-    if target_col in df2.columns:
+    if target_col in df1.columns and target_col in df2.columns:
         df2 = df2.drop(columns=target_col)
 
-    # Perform the merge on subject_id
-    df = pd.merge(df1, df2, on='subject_id', how='inner')
-
-    return df
+    return pd.merge(df1, df2, on='subject_id', how='inner')
 
 
 def load_all_datasets() -> dict:
