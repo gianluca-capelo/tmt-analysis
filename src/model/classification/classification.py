@@ -21,17 +21,28 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR
+from src.hand_analysis.loader.load_last_split import load_last_analysis
+
+
+def get_target_column(target_col, df):
+    last_analysis, _ = load_last_analysis()
+    if target_col not in last_analysis.columns:
+        raise ValueError(f"Target column '{target_col}' not found in the last analysis DataFrame.")
+
+    target_df = last_analysis[['subject_id', target_col]]
+    merged_df = pd.merge(df, target_df, on='subject_id', how='inner')
+
+    return merged_df[target_col].values
 
 
 def split_features_and_target(df, target_col):
-    if target_col not in df.columns:
-        raise ValueError(f"Target column '{target_col}' not found in DataFrame.")
-
     df_copy = df.copy().drop('subject_id', axis=1)
 
     X = df_copy.drop(columns=target_col).values
 
-    y = df_copy[target_col].values
+    y = df_copy[target_col].values \
+        if target_col in df.columns \
+        else get_target_column(target_col, df)
 
     feature_names = df_copy.drop(columns=target_col).columns
 
@@ -39,18 +50,6 @@ def split_features_and_target(df, target_col):
 
 
 def join_on_subject(df1: pd.DataFrame, df2: pd.DataFrame, target_col) -> pd.DataFrame:
-    """
-    Merge two DataFrames on 'subject_id'.
-
-    Args:
-        df1 (pd.DataFrame): First DataFrame, must include 'subject_id'.
-        df2 (pd.DataFrame): Second DataFrame, will be merged after dropping the target column if present in both.
-        target_col (str): The name of the target column.
-
-    Returns:
-        pd.DataFrame: Merged DataFrame.
-    """
-
     if target_col in df1.columns and target_col in df2.columns:
         df2 = df2.drop(columns=target_col)
 
