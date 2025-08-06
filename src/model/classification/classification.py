@@ -57,10 +57,6 @@ def join_on_subject_and_move_target_last(df1: pd.DataFrame, df2: pd.DataFrame, t
     # Perform the merge on subject_id
     df = pd.merge(df1, df2, on='subject_id', how='inner')
 
-    # Move the target column to the end
-    reordered_cols = [col for col in df.columns if col != target_col] + [target_col]
-    df = df[reordered_cols]
-
     return df
 
 
@@ -125,6 +121,10 @@ def retrieve_dataset(dataset_name, target_col):
 
         case _:
             raise ValueError(f"Dataset '{dataset_name}' not recognized.")
+
+        # Move the target column to the end
+    reordered_cols = [col for col in df.columns if col != target_col] + [target_col]
+    df = df[reordered_cols]
 
     return split_features_and_target(df, target_col)
 
