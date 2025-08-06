@@ -29,7 +29,7 @@ def get_target_column(target_col, df):
     if target_col not in last_analysis.columns:
         raise ValueError(f"Target column '{target_col}' not found in the last analysis DataFrame.")
 
-    target_df = last_analysis[['subject_id', target_col]]
+    target_df = last_analysis[['subject_id', target_col]].drop_duplicates(subset='subject_id')
     merged_df = pd.merge(df, target_df, on='subject_id', how='inner')
 
     return merged_df[target_col].values

@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
 
 from src.model.classification.classification import calculate_feature_importance_for_fold, \
-    calculate_metrics_leave_one_out, perform, \
+    calculate_metrics_leave_one_out, \
     save_results, retrieve_dataset
 
 
@@ -57,7 +57,7 @@ def get_models(random_state: int):
 
 
 def perform(perform_pca: bool, dataset_name: str, global_seed: int,
-            inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool, target_col):
+            inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool, target_col, is_classification):
     X, y, feature_names = retrieve_dataset(dataset_name, target_col)
 
     param_grids = get_parameter_grid()
@@ -68,7 +68,7 @@ def perform(perform_pca: bool, dataset_name: str, global_seed: int,
 
     performance_metrics_df = perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca,
                                                       feature_selection, tune_hyperparameters,
-                                                      inner_cv_seed, feature_names)
+                                                      inner_cv_seed, feature_names, is_classification)
 
     return performance_metrics_df
 
@@ -188,7 +188,7 @@ def main():
     feature_selection = True
     dataset_name = 'demographic+digital'
     perform_pca = False
-    target_col = 'mmse'  # TODO GIAN: AGREGAR
+    target_col = 'mmse'
     performance_metrics_df = perform(
         perform_pca=perform_pca,
         dataset_name=dataset_name,
@@ -196,7 +196,8 @@ def main():
         inner_cv_seed=inner_cv_seed,
         feature_selection=feature_selection,
         tune_hyperparameters=tune_hyperparameters,
-        target_col=target_col
+        target_col=target_col,
+        is_classification=False
     )
 
     leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df)
