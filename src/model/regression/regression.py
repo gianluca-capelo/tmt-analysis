@@ -12,7 +12,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
 
-from src.model.classification import calculate_feature_importance_for_fold, calculate_metrics_leave_one_out, perform, \
+from src.model.classification.classification import calculate_feature_importance_for_fold, \
+    calculate_metrics_leave_one_out, perform, \
     save_results, retrieve_dataset
 
 
@@ -187,7 +188,7 @@ def main():
     feature_selection = True
     dataset_name = 'demographic+digital'
     perform_pca = False
-    target_col = 'mmse' #TODO GIAN: AGREGAR
+    target_col = 'mmse'  # TODO GIAN: AGREGAR
     performance_metrics_df = perform(
         perform_pca=perform_pca,
         dataset_name=dataset_name,
