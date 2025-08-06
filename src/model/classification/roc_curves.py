@@ -9,9 +9,10 @@ from sklearn.metrics import roc_curve, auc
 from src.config import CLASSIFICATION_RESULTS_DIR
 
 
-def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = None):
+def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = None, datasets_filter: list = None):
     """
     Genera una gráfica de curvas ROC para los top N modelos/datasets según el AUC promedio.
+    Permite filtrar por datasets específicos.
 
     Parameters
     ----------
@@ -21,19 +22,25 @@ def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = N
         Número de curvas con mejor AUC a mostrar.
     save_path : str, optional
         Ruta para guardar la imagen. Si None, solo se muestra.
+    datasets_filter : list, optional
+        Lista con los nombres exactos de datasets a incluir (coinciden con los usados en save_results).
+        Si None, se usan todos los datasets.
     """
     results_dir = os.path.join(CLASSIFICATION_RESULTS_DIR, date_folder)
     leave_one_out_files = glob.glob(os.path.join(results_dir, "*_leave_one_out.csv"))
 
     auc_list = []
 
-    # Primero recolectamos todos los AUCs
     for file_path in leave_one_out_files:
+        dataset_name = os.path.basename(file_path).replace("_leave_one_out.csv", "")
+
+        # Si hay filtro de datasets, aplicarlo
+        if datasets_filter and dataset_name not in datasets_filter:
+            continue
+
         df = pd.read_csv(file_path)
         df['y_true'] = df['y_true'].apply(ast.literal_eval)
         df['y_pred_proba'] = df['y_pred_proba'].apply(ast.literal_eval)
-
-        dataset_name = os.path.basename(file_path).replace("_leave_one_out.csv", "")
 
         for _, row in df.iterrows():
             model_name = row['model']
@@ -49,10 +56,10 @@ def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = N
                 "auc": roc_auc
             })
 
-    # Ordenamos por AUC descendente y nos quedamos con los top N
+    # Ordenar por AUC y quedarnos con los top_n
     top_auc = sorted(auc_list, key=lambda x: x["auc"], reverse=True)[:top_n]
 
-    # Graficamos
+    # Graficar
     plt.figure(figsize=(10, 8))
     for entry in top_auc:
         plt.plot(entry["fpr"], entry["tpr"], lw=1.5,
@@ -72,9 +79,23 @@ def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = N
 
 
 if __name__ == "__main__":
-    # Ejemplo de uso
-    date_folder = "2025-08-06"  # Cambia esto por la fecha deseada
+    date_folder = "2025-08-06"
     save_path = os.path.join(CLASSIFICATION_RESULTS_DIR, f"{date_folder}_roc_curves.png")
+    datasets_filter = [
+        'demographic',
+        #'demographic_less_subjects',
+        #'demographic+digital',
+        #'demographic+digital_less',
+        #'non_digital_tests',
+        #'non_digital_tests+demo',
+        #'non_digital_test_less_subjects',
+        #'non_digital_test_less_subjects+demo',
+        'digital_test',
+        'digital_test_less_subjects',
+        #'hand_and_eye',
+        #'hand_and_eye_demo'
+    ]
 
-    plot_top_n_datasets_roc(date_folder, 20, save_path)
+    plot_top_n_datasets_roc(date_folder, 20, save_path, datasets_filter)
+
     print(f"ROC curves saved to {save_path}")
