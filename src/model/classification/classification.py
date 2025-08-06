@@ -35,17 +35,17 @@ def split_features_and_target(df, target_col):
     return X, y, feature_names
 
 
-def join_on_subject_and_move_target_last(df1: pd.DataFrame, df2: pd.DataFrame, target_col) -> pd.DataFrame:
+def join_on_subject(df1: pd.DataFrame, df2: pd.DataFrame, target_col) -> pd.DataFrame:
     """
-    Merge two DataFrames on 'subject_id' and move the target column to the end.
+    Merge two DataFrames on 'subject_id'.
 
     Args:
         df1 (pd.DataFrame): First DataFrame, must include 'subject_id' and the target column.
         df2 (pd.DataFrame): Second DataFrame, will be merged after dropping the target column if present.
-        target_col (str): The name of the target column to move to the end.
+        target_col (str): The name of the target column.
 
     Returns:
-        pd.DataFrame: Merged DataFrame with the target column as the last column.
+        pd.DataFrame: Merged DataFrame.
     """
     if target_col not in df1.columns:
         raise ValueError(f"'{target_col}' must be present in df1 to retain it as the target.")
@@ -83,28 +83,23 @@ def retrieve_dataset(dataset_name, target_col):
             df = datasets['demographic_df'].loc[datasets['df_digital_hand_and_eye'].index]
 
         case 'demographic+digital':
-            df = join_on_subject_and_move_target_last(datasets['df_digital_tmt_with_target'],
-                                                      datasets['demographic_df'], target_col)
+            df = join_on_subject(datasets['df_digital_tmt_with_target'], datasets['demographic_df'], target_col)
 
         case 'demographic+digital_less':
             subset = datasets['df_digital_tmt_with_target'].loc[datasets['df_digital_hand_and_eye'].index]
-            df = join_on_subject_and_move_target_last(subset, datasets['demographic_df'], target_col)
+            df = join_on_subject(subset, datasets['demographic_df'], target_col)
 
         case 'non_digital_tests':
             df = datasets['non_digital_df']
 
         case 'non_digital_tests+demo':
-            df = join_on_subject_and_move_target_last(datasets['non_digital_df'],
-                                                      datasets['demographic_df'], target_col)
+            df = join_on_subject(datasets['non_digital_df'], datasets['demographic_df'], target_col)
 
         case 'non_digital_test_less_subjects':
             df = datasets['non_digital_test_less_subjects']
 
         case 'non_digital_test_less_subjects+demo':
-            df = join_on_subject_and_move_target_last(
-                datasets['non_digital_test_less_subjects'],
-                datasets['demographic_df'],
-                target_col)
+            df = join_on_subject(datasets['non_digital_test_less_subjects'], datasets['demographic_df'], target_col)
 
         case 'digital_test':
             df = datasets['df_digital_tmt_with_target']
@@ -116,8 +111,7 @@ def retrieve_dataset(dataset_name, target_col):
             df = datasets['df_digital_hand_and_eye']
 
         case 'hand_and_eye_demo':
-            df = join_on_subject_and_move_target_last(datasets['df_digital_hand_and_eye'], datasets['demographic_df'],
-                                                      target_col)
+            df = join_on_subject(datasets['df_digital_hand_and_eye'], datasets['demographic_df'], target_col)
 
         case _:
             raise ValueError(f"Dataset '{dataset_name}' not recognized.")
