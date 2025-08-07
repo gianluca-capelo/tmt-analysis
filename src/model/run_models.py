@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from collections import defaultdict
@@ -420,19 +421,47 @@ def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):
 
 
 def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters, is_classification):
-    classification_dir = CLASSIFICATION_RESULTS_DIR if is_classification else REGRESSION_RESULTS_DIR
-    save_dir = os.path.join(classification_dir, datetime.now().strftime("%Y-%m-%d"))
+                 tune_hyperparameters, is_classification, timestamp: str):
+    """
+    Guarda los resultados y la configuración del experimento en un directorio por fecha y dataset.
 
-    os.makedirs(save_dir, exist_ok=True)
+    Args:
+        leave_one_out_metrics (pd.DataFrame): Métricas agregadas por modelo.
+        dataset_name (str): Nombre del dataset usado.
+        feature_selection (bool): Si se aplicó selección de características.
+        perform_pca (bool): Si se aplicó PCA.
+        performance_metrics_df (pd.DataFrame): Métricas por fold.
+        tune_hyperparameters (bool): Si se usó GridSearchCV.
+        is_classification (bool): Si es una tarea de clasificación.
+        timestamp (str): Marca de tiempo para la carpeta (formato "%Y-%m-%d_%H%M").
+    """
 
-    if perform_pca:
-        save_path = f'{save_dir}/{dataset_name}_feature_{feature_selection}_tune={tune_hyperparameters}_LOOCV_PCA_{datetime.now().strftime("%s")[-4:]}.csv'
-    else:
-        save_path = f'{save_dir}/{dataset_name}_feature_{feature_selection}_tune={tune_hyperparameters}_LOOCV_{datetime.now().strftime("%s")[-4:]}.csv'
+    base_dir = CLASSIFICATION_RESULTS_DIR if is_classification else REGRESSION_RESULTS_DIR
+    dataset_dir = os.path.join(base_dir, timestamp, dataset_name)
+    os.makedirs(dataset_dir, exist_ok=True)
 
-    performance_metrics_df.to_csv(save_path, index=False)
-    leave_one_out_metrics.to_csv(f'{save_dir}/{dataset_name}_leave_one_out.csv', index=False)
+    # Nombre base para archivos
+    filename_base = f"fs={feature_selection}_pca={perform_pca}_tune={tune_hyperparameters}"
+
+    # Guardar CSVs
+    performance_metrics_df.to_csv(os.path.join(dataset_dir, f"{filename_base}_folds.csv"), index=False)
+    leave_one_out_metrics.to_csv(os.path.join(dataset_dir, f"{filename_base}_summary.csv"), index=False)
+
+    # Guardar configuración
+    config = {
+        "dataset": dataset_name,
+        "feature_selection": feature_selection,
+        "perform_pca": perform_pca,
+        "tune_hyperparameters": tune_hyperparameters,
+        "is_classification": is_classification,
+        "timestamp": timestamp,
+        "n_folds": len(performance_metrics_df)
+    }
+
+    with open(os.path.join(dataset_dir, f"{filename_base}_config.json"), 'w') as f:
+        json.dump(config, f, indent=4)
+
+    logging.info(f"✔️ Resultados guardados en: {dataset_dir}")
 
 
 def main():
@@ -463,7 +492,8 @@ def main():
         #'hand_and_eye_demo'
     ]
 
-    is_classification = False
+    is_classification = True
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
     for dataset_name in dataset_names:
         logging.info(f"Processing dataset: {dataset_name}")
 
@@ -481,7 +511,7 @@ def main():
         leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df, is_classification)
 
         save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                     tune_hyperparameters, is_classification=is_classification)
+                     tune_hyperparameters, is_classification=is_classification, timestamp=timestamp)
 
 
 if __name__ == "__main__":
