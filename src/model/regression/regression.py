@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 from src.model.classification.classification import calculate_feature_importance_for_fold, \
-    save_results, retrieve_dataset, calculate_feature_importance
+    save_results, retrieve_dataset, calculate_feature_importance, perform_cross_validation_for_model
 
 
 def get_parameter_grid():
@@ -79,8 +79,6 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: b
     for model in models:
         model_name = model.__class__.__name__
 
-        logging.info(f"\n🧪 CV for: {model_name}")
-
         param_grid = param_grids.get(model_name, {})
 
         fold_metrics = perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca,
@@ -92,92 +90,6 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: b
         all_fold_metrics.extend(fold_metrics)
 
     return pd.DataFrame(all_fold_metrics)
-
-
-def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
-                                       tune_hyperparameters: bool, inner_cv_seed: int,
-                                       feature_names, is_classification):
-    if is_classification:
-        select_score_func = f_classif
-        pipeline_name = 'classifier'
-    else:
-        select_score_func = f_regression
-        pipeline_name = 'regressor'
-
-    max_pca_components = 4
-    max_selected_features = 20
-    model_name = model.__class__.__name__
-    logging.info(f"\n🧪 CV for: {model_name}")
-
-    fold_metrics = []
-
-    n_folds = outer_cv.get_n_splits(X)
-    fold_iterator = tqdm(
-        enumerate(outer_cv.split(X, y)),
-        total=n_folds,
-        desc=f"Model: {model_name}",
-        position=0,
-        leave=True
-    )
-
-    for fold, (train_idx, test_idx) in fold_iterator:
-
-        X_train, X_test = X[train_idx], X[test_idx]
-        y_train, y_test = y[train_idx], y[test_idx]
-
-        pca_step = (
-            ('pca', PCA(n_components=min(max_pca_components, X_train.shape[1])))
-            if perform_pca else ('pca_noop', 'passthrough')
-        )
-
-        select_step = (
-            ('select', SelectKBest(score_func=select_score_func, k=min(max_selected_features, X_train.shape[1])))
-            if feature_selection else ('select_noop', 'passthrough')
-        )
-
-        pipeline = Pipeline([
-            ('imputer', SimpleImputer(strategy='mean')),
-            select_step,
-            ('scaler', StandardScaler()),
-            pca_step,
-            (pipeline_name, model)
-        ])
-
-        if tune_hyperparameters and param_grid:
-            inner_cv = (
-                StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
-                if is_classification
-                else KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
-            )
-            scoring = 'roc_auc' if is_classification else 'r2'
-            grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1, verbose=0)
-            grid.fit(X_train, y_train)
-            best_model = grid.best_estimator_
-        else:
-            pipeline.fit(X_train, y_train)
-            best_model = pipeline
-
-        # Only compute importance if PCA is OFF
-        if not perform_pca and is_classification:  # TODO GIAN: adaptar a regresion
-            importance_dict = calculate_feature_importance_for_fold(X_train, best_model, feature_names,
-                                                                    feature_selection, model_name)
-        else:
-            importance_dict = {}
-
-        y_pred_proba = best_model.predict_proba(X_test)[:, 1] if is_classification else None
-        y_pred = best_model.predict(X_test)
-
-        fold_metrics.append({
-            'model': model_name,
-            'fold': fold,
-            'y_test': y_test[0],
-            'y_pred': y_pred[0],
-            'y_pred_proba': y_pred_proba[0] if y_pred_proba is not None else None,
-            'feature_importances': importance_dict,
-            'feature_names': feature_names
-        })
-
-    return fold_metrics
 
 
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
