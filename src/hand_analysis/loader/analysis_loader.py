@@ -128,7 +128,7 @@ def save_results(
         eval_subject_ids,
         split: bool,
         old_split_config_date: str
-) -> None:
+):
     """
     Save the metrics DataFrame and configuration metadata to the run directory.
     """

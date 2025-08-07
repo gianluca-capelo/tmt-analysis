@@ -1,7 +1,7 @@
 import pyxations as pyx
 
 from src import config
-from src.data_processing.filter_data_with_last_date import filter_data_with_last_date
+
 
 def process_data(source_path):
 
@@ -21,7 +21,3 @@ def process_data(source_path):
         dataset_format="eyelink"
     )
 
-
-if __name__ == "__main__":
-    process_data()
-    print("Data processing completed successfully.")

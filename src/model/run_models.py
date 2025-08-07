@@ -474,24 +474,26 @@ def main():
     tune_hyperparameters = False
     feature_selection = True
     perform_pca = False
-    target_col = 'group'
+    target_col = 'mmse'
+    is_classification = False
+
+    # TODO GIAN: BORRAR COLUMNA GROUP CUANDO ES REGRESSION Y CLASIFICACION
 
     dataset_names = [
-        #'demographic',
-        #'demographic_less_subjects',
-        #'demographic+digital',
-        #'demographic+digital_less',
-        'non_digital_tests',
-        #'non_digital_tests+demo',
-        #'non_digital_test_less_subjects',
-        #'non_digital_test_less_subjects+demo',
-        #'digital_test',
-        #'digital_test_less_subjects',
-        #'hand_and_eye',
-        #'hand_and_eye_demo'
+        # 'demographic',
+        # 'demographic_less_subjects',
+        'demographic+digital',
+        # 'demographic+digital_less',
+        # 'non_digital_tests',
+        # 'non_digital_tests+demo',
+        # 'non_digital_test_less_subjects',
+        # 'non_digital_test_less_subjects+demo',
+        # 'digital_test',
+        # 'digital_test_less_subjects',
+        # 'hand_and_eye',
+        # 'hand_and_eye_demo'
     ]
 
-    is_classification = False
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
     for dataset_name in dataset_names:
         logging.info(f"Processing dataset: {dataset_name}")
