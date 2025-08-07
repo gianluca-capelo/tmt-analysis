@@ -22,7 +22,7 @@ from sklearn.svm import SVC
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR
 from src.hand_analysis.loader.load_last_split import load_last_analysis
-
+from tqdm import tqdm
 
 def get_target_column(target_col, df):
     last_analysis, _ = load_last_analysis()
@@ -197,8 +197,16 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
 
     fold_metrics = []
 
-    # Enumeramos 'repeat' y 'fold' para guardar en métricas
-    for fold, (train_idx, test_idx) in enumerate(outer_cv.split(X, y)):
+    n_folds = outer_cv.get_n_splits(X)
+    fold_iterator = tqdm(
+        enumerate(outer_cv.split(X, y)),
+        total=n_folds,
+        desc=f"Model: {model_name}",
+        position=0,
+        leave=True
+    )
+
+    for fold, (train_idx, test_idx) in fold_iterator:
         logging.info(f'Fold number: {fold}')
 
         X_train, X_test = X[train_idx], X[test_idx]
@@ -238,7 +246,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
                                                                     feature_selection, model_name)
         else:
             importance_dict = {}
-            logging.info(f"Skipping feature importance for {model_name} in fold {fold} due to PCA.")
 
         y_pred_proba = best_model.predict_proba(X_test)[:, 1]
         y_pred = best_model.predict(X_test)

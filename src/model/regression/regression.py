@@ -13,6 +13,7 @@ from sklearn.preprocessing import StandardScaler
 
 from src.model.classification.classification import calculate_feature_importance_for_fold, \
     save_results, retrieve_dataset, calculate_feature_importance
+from tqdm import tqdm
 
 
 def get_parameter_grid():
@@ -110,8 +111,16 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
 
     fold_metrics = []
 
-    # Enumeramos 'repeat' y 'fold' para guardar en métricas
-    for fold, (train_idx, test_idx) in enumerate(outer_cv.split(X, y)):
+    n_folds = outer_cv.get_n_splits(X)
+    fold_iterator = tqdm(
+        enumerate(outer_cv.split(X, y)),
+        total=n_folds,
+        desc=f"Model: {model_name}",
+        position=0,
+        leave=True
+    )
+
+    for fold, (train_idx, test_idx) in fold_iterator:
         logging.info(f'Fold number: {fold}')
 
         X_train, X_test = X[train_idx], X[test_idx]
@@ -156,7 +165,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
                                                                     feature_selection, model_name)
         else:
             importance_dict = {}
-            logging.info(f"Skipping feature importance for {model_name} in fold {fold} due to PCA.")
 
         y_pred_proba = best_model.predict_proba(X_test)[:, 1] if is_classification else None
         y_pred = best_model.predict(X_test)
