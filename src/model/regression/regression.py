@@ -13,7 +13,8 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 from src.model.classification.classification import calculate_feature_importance_for_fold, \
-    save_results, retrieve_dataset, calculate_feature_importance, perform_cross_validation_for_model
+    save_results, retrieve_dataset, calculate_feature_importance, perform_cross_validation_for_model, \
+    perform_cross_validation
 
 
 def get_parameter_grid():
@@ -70,26 +71,6 @@ def perform(perform_pca: bool, dataset_name: str, global_seed: int,
                                                       inner_cv_seed, feature_names, is_classification)
 
     return performance_metrics_df
-
-
-def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
-                             tune_hyperparameters: bool, inner_cv_seed: int, feature_names, is_classification):
-    all_fold_metrics = []
-
-    for model in models:
-        model_name = model.__class__.__name__
-
-        param_grid = param_grids.get(model_name, {})
-
-        fold_metrics = perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca,
-                                                          feature_selection,
-                                                          tune_hyperparameters,
-                                                          inner_cv_seed,
-                                                          feature_names, is_classification)
-
-        all_fold_metrics.extend(fold_metrics)
-
-    return pd.DataFrame(all_fold_metrics)
 
 
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
