@@ -8,9 +8,12 @@ import pandas as pd
 import xgboost as xgb
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.metrics import (
     roc_auc_score, accuracy_score, balanced_accuracy_score,
     precision_score, recall_score, f1_score
@@ -118,44 +121,81 @@ def retrieve_dataset(dataset_name, target_col):
     return split_features_and_target(df, target_col)
 
 
-def get_parameter_grid():
-    return {
-        "RandomForestClassifier": {
-            "classifier__n_estimators": [100, 500, 700, 1000],
-            "classifier__max_depth": [None, 10, 20, 30]
-        },
-        "SVC": {
-            "classifier__C": [0.1, 1, 10],
-            "classifier__kernel": ['linear', 'rbf']
-        },
-        "LogisticRegression": {
-            "classifier__C": [0.1, 1, 10],
-            "classifier__penalty": ['l2']
-        },
-        "XGBClassifier": {
-            "classifier__n_estimators": [100, 300],
-            "classifier__max_depth": [3, 5],
-            "classifier__learning_rate": [0.05, 0.1]
+def get_parameter_grid(is_classification):
+    if is_classification:
+        return {
+            "RandomForestClassifier": {
+                "classifier__n_estimators": [100, 500, 700, 1000],
+                "classifier__max_depth": [None, 10, 20, 30]
+            },
+            "SVC": {
+                "classifier__C": [0.1, 1, 10],
+                "classifier__kernel": ['linear', 'rbf']
+            },
+            "LogisticRegression": {
+                "classifier__C": [0.1, 1, 10],
+                "classifier__penalty": ['l2']
+            },
+            "XGBClassifier": {
+                "classifier__n_estimators": [100, 300],
+                "classifier__max_depth": [3, 5],
+                "classifier__learning_rate": [0.05, 0.1]
+            }
         }
-    }
+    else:
+        return {
+            "RandomForestRegressor": {
+                "regressor__n_estimators": [100, 500, 700, 1000],
+                "regressor__max_depth": [None, 10, 20, 30]
+            },
+            "SVR": {
+                "regressor__C": [0.1, 1, 10],
+                "regressor__kernel": ['linear', 'rbf'],
+                "regressor__epsilon": [0.01, 0.1, 0.2]
+            },
+            "LinearRegression": {
+                # LinearRegression has no hyperparameters to tune
+            },
+            "Ridge": {
+                "regressor__alpha": [0.1, 1.0, 10.0, 100.0]
+            },
+            "Lasso": {
+                "regressor__alpha": [0.01, 0.1, 1.0, 10.0]
+            },
+            "XGBRegressor": {
+                "regressor__n_estimators": [100, 300],
+                "regressor__max_depth": [3, 5],
+                "regressor__learning_rate": [0.05, 0.1]
+            }
+        }
 
 
-def get_models(random_state: int):
-    return [
-        RandomForestClassifier(random_state=random_state, n_jobs=-1),
-        SVC(random_state=random_state, probability=True, kernel='linear'),
-        LogisticRegression(max_iter=1000, random_state=random_state, solver='saga', n_jobs=-1),
-        xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
-    ]
+def get_models(random_state: int, is_classification):
+    if is_classification:
+        return [
+            RandomForestClassifier(random_state=random_state, n_jobs=-1),
+            SVC(random_state=random_state, probability=True, kernel='linear'),
+            LogisticRegression(max_iter=1000, random_state=random_state, solver='saga', n_jobs=-1),
+            xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
+        ]
+    else:
+        return [
+            RandomForestRegressor(random_state=random_state, n_jobs=-1),
+            # SVR(kernel="linear", C=1e5, epsilon=0.00001), #TODO GIAN: porque se traba?
+            LinearRegression(n_jobs=-1),
+            Ridge(random_state=random_state),
+            Lasso(max_iter=10000, random_state=random_state, alpha=0.0001),
+            xgb.XGBRegressor(random_state=random_state, tree_method="hist", n_jobs=-1)
+        ]
 
 
 def perform(perform_pca: bool, dataset_name: str, global_seed: int,
             inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool, target_col, is_classification):
     X, y, feature_names = retrieve_dataset(dataset_name, target_col)
 
-    param_grids = get_parameter_grid()
+    param_grids = get_parameter_grid(is_classification)
 
-    models = get_models(global_seed)
+    models = get_models(global_seed, is_classification)
 
     outer_cv = LeaveOneOut()
 
@@ -199,7 +239,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
     max_pca_components = 4
     max_selected_features = 20
     model_name = model.__class__.__name__
-    logging.info(f"\n🧪 CV for: {model_name}")
 
     fold_metrics = []
 
@@ -271,6 +310,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
 
     return fold_metrics
 
+
 def calculate_feature_importance_for_fold(X_train, best_model, feature_names, feature_selection, model_name):
     classifier = best_model.named_steps['classifier']
     select = best_model.named_steps['select']
@@ -292,7 +332,7 @@ def calculate_feature_importance_for_fold(X_train, best_model, feature_names, fe
     raise ValueError(f"Model {model_name} does not support feature importance extraction.")
 
 
-def calculate_metrics_leave_one_out_for_model(df, model_name):
+def calculate_metrics_leave_one_out_for_model_for_classification(df, model_name):
     model_df = df[df['model'] == model_name]
     y_true = model_df['y_test'].tolist()
     y_pred_proba = model_df['y_pred_proba'].tolist()
@@ -310,6 +350,33 @@ def calculate_metrics_leave_one_out_for_model(df, model_name):
         'y_pred_proba': [y_pred_proba],
         'feature_importances': [calculate_feature_importance(model_df)]
     })
+
+
+def calculate_metrics_leave_one_out_for_model(performance_df, model_name, is_classification):
+    if is_classification:
+        return calculate_metrics_leave_one_out_for_model_for_classification(performance_df, model_name)
+    else:
+        return calculate_metrics_leave_one_out_regression(performance_df, model_name)
+
+
+def calculate_metrics_leave_one_out_regression(performance_df, model_name):
+    model_dfs = []
+    for model_name in performance_df['model'].unique():
+        df = performance_df[performance_df['model'] == model_name]
+        y_true = df['y_test'].tolist()
+        y_pred = df['y_pred'].tolist()
+
+        model_dfs.append(pd.DataFrame({
+            'model': [model_name],
+            'r2': [r2_score(y_true, y_pred)],
+            'mse': [mean_squared_error(y_true, y_pred)],
+            'mae': [mean_absolute_error(y_true, y_pred)],
+            'y_true': [y_true],
+            'y_pred': [y_pred],
+            'feature_importances': [calculate_feature_importance(df)]
+        }))
+
+    return pd.concat(model_dfs, ignore_index=True)
 
 
 def calculate_feature_importance(model_df):
@@ -346,9 +413,9 @@ def calculate_feature_importance(model_df):
     return avg_importance
 
 
-def calculate_metrics_leave_one_out(performance_metrics_df):
+def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):
     model_dfs = [
-        calculate_metrics_leave_one_out_for_model(performance_metrics_df, model_name)
+        calculate_metrics_leave_one_out_for_model(performance_metrics_df, model_name, is_classification)
         for model_name in performance_metrics_df['model'].unique()
     ]
 
@@ -387,18 +454,18 @@ def main():
     target_col = 'group'
 
     dataset_names = [
-        'demographic',
-        'demographic_less_subjects',
-        'demographic+digital',
-        'demographic+digital_less',
+        #'demographic',
+        #'demographic_less_subjects',
+        #'demographic+digital',
+        #'demographic+digital_less',
         'non_digital_tests',
-        'non_digital_tests+demo',
-        'non_digital_test_less_subjects',
-        'non_digital_test_less_subjects+demo',
-        'digital_test',
-        'digital_test_less_subjects',
-        'hand_and_eye',
-        'hand_and_eye_demo'
+        #'non_digital_tests+demo',
+        #'non_digital_test_less_subjects',
+        #'non_digital_test_less_subjects+demo',
+        #'digital_test',
+        #'digital_test_less_subjects',
+        #'hand_and_eye',
+        #'hand_and_eye_demo'
     ]
 
     is_classification = True
@@ -416,7 +483,7 @@ def main():
             is_classification=is_classification
         )
 
-        leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df)
+        leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df, is_classification)
 
         save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
                      tune_hyperparameters, is_classification=is_classification)
