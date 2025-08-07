@@ -440,12 +440,11 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
     dataset_dir = os.path.join(base_dir, timestamp, dataset_name)
     os.makedirs(dataset_dir, exist_ok=True)
 
-    # Nombre base para archivos
-    filename_base = f"fs={feature_selection}_pca={perform_pca}_tune={tune_hyperparameters}"
+    # Guardar métricas por fold
+    performance_metrics_df.to_csv(os.path.join(dataset_dir, "folds.csv"), index=False)
 
-    # Guardar CSVs
-    performance_metrics_df.to_csv(os.path.join(dataset_dir, f"{filename_base}_folds.csv"), index=False)
-    leave_one_out_metrics.to_csv(os.path.join(dataset_dir, f"{filename_base}_summary.csv"), index=False)
+    # Guardar métricas globales
+    leave_one_out_metrics.to_csv(os.path.join(dataset_dir, "summary.csv"), index=False)
 
     # Guardar configuración
     config = {
@@ -458,7 +457,7 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
         "n_folds": len(performance_metrics_df)
     }
 
-    with open(os.path.join(dataset_dir, f"{filename_base}_config.json"), 'w') as f:
+    with open(os.path.join(dataset_dir, f"config.json"), 'w') as f:
         json.dump(config, f, indent=4)
 
     logging.info(f"✔️ Resultados guardados en: {dataset_dir}")
@@ -492,7 +491,7 @@ def main():
         #'hand_and_eye_demo'
     ]
 
-    is_classification = True
+    is_classification = False
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
     for dataset_name in dataset_names:
         logging.info(f"Processing dataset: {dataset_name}")
