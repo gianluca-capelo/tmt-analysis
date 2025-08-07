@@ -360,24 +360,19 @@ def calculate_metrics_leave_one_out_for_model(performance_df, model_name, is_cla
 
 
 def calculate_metrics_leave_one_out_regression(performance_df, model_name):
-    model_dfs = []
-    for model_name in performance_df['model'].unique():
-        df = performance_df[performance_df['model'] == model_name]
-        y_true = df['y_test'].tolist()
-        y_pred = df['y_pred'].tolist()
+    df = performance_df[performance_df['model'] == model_name]
+    y_true = df['y_test'].tolist()
+    y_pred = df['y_pred'].tolist()
 
-        model_dfs.append(pd.DataFrame({
-            'model': [model_name],
-            'r2': [r2_score(y_true, y_pred)],
-            'mse': [mean_squared_error(y_true, y_pred)],
-            'mae': [mean_absolute_error(y_true, y_pred)],
-            'y_true': [y_true],
-            'y_pred': [y_pred],
-            'feature_importances': [calculate_feature_importance(df)]
-        }))
-
-    return pd.concat(model_dfs, ignore_index=True)
-
+    return pd.DataFrame({
+        'model': [model_name],
+        'r2': [r2_score(y_true, y_pred)],
+        'mse': [mean_squared_error(y_true, y_pred)],
+        'mae': [mean_absolute_error(y_true, y_pred)],
+        'y_true': [y_true],
+        'y_pred': [y_pred],
+        'feature_importances': [calculate_feature_importance(df)]
+    })
 
 def calculate_feature_importance(model_df):
     """
@@ -468,7 +463,7 @@ def main():
         #'hand_and_eye_demo'
     ]
 
-    is_classification = True
+    is_classification = False
     for dataset_name in dataset_names:
         logging.info(f"Processing dataset: {dataset_name}")
 
