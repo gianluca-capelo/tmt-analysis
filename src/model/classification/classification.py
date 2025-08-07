@@ -212,7 +212,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        # Steps
         pca_step = (
             ('pca', PCA(n_components=min(max_pca_components, X_train.shape[1])))
             if perform_pca else ('pca_noop', 'passthrough')
