@@ -19,10 +19,11 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+from tqdm import tqdm
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR
 from src.hand_analysis.loader.load_last_split import load_last_analysis
-from tqdm import tqdm
+
 
 def get_target_column(target_col, df):
     last_analysis, _ = load_last_analysis()
@@ -207,7 +208,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
     )
 
     for fold, (train_idx, test_idx) in fold_iterator:
-        logging.info(f'Fold number: {fold}')
 
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]

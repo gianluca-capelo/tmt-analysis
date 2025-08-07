@@ -10,10 +10,10 @@ from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
 
 from src.model.classification.classification import calculate_feature_importance_for_fold, \
     save_results, retrieve_dataset, calculate_feature_importance
-from tqdm import tqdm
 
 
 def get_parameter_grid():
@@ -121,7 +121,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
     )
 
     for fold, (train_idx, test_idx) in fold_iterator:
-        logging.info(f'Fold number: {fold}')
 
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
