@@ -20,7 +20,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 
-from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR
+from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR
 from src.hand_analysis.loader.load_last_split import load_last_analysis
 
 
@@ -207,12 +207,12 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         # Steps
         pca_step = (
             ('pca', PCA(n_components=min(max_pca_components, X_train.shape[1])))
-            if perform_pca else ('noop', 'passthrough')
+            if perform_pca else ('pca_noop', 'passthrough')
         )
 
         select_step = (
             ('select', SelectKBest(score_func=f_classif, k=min(max_selected_features, X_train.shape[1])))
-            if feature_selection else ('noop', 'passthrough')
+            if feature_selection else ('select_noop', 'passthrough')
         )
 
         pipeline = Pipeline([
@@ -343,8 +343,8 @@ def calculate_metrics_leave_one_out(performance_metrics_df):
 
 
 def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters):
-    classification_dir = CLASSIFICATION_RESULTS_DIR
+                 tune_hyperparameters, is_classification):
+    classification_dir = CLASSIFICATION_RESULTS_DIR if is_classification else REGRESSION_RESULTS_DIR
     save_dir = os.path.join(classification_dir, datetime.now().strftime("%Y-%m-%d"))
 
     os.makedirs(save_dir, exist_ok=True)
@@ -402,7 +402,7 @@ def main():
         leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df)
 
         save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                     tune_hyperparameters)
+                     tune_hyperparameters, is_classification=True)
 
 
 if __name__ == "__main__":

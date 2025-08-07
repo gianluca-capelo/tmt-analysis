@@ -10,11 +10,9 @@ from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVR
 
 from src.model.classification.classification import calculate_feature_importance_for_fold, \
-    calculate_metrics_leave_one_out, \
-    save_results, retrieve_dataset
+    save_results, retrieve_dataset, calculate_feature_importance
 
 
 def get_parameter_grid():
@@ -48,7 +46,7 @@ def get_parameter_grid():
 def get_models(random_state: int):
     return [
         RandomForestRegressor(random_state=random_state, n_jobs=-1),
-        SVR(kernel="linear", C=1e5, epsilon=0.00001),
+        # SVR(kernel="linear", C=1e5, epsilon=0.00001), #TODO GIAN: porque se traba?
         LinearRegression(n_jobs=-1),
         Ridge(random_state=random_state),
         Lasso(max_iter=10000, random_state=random_state, alpha=0.0001),
@@ -122,12 +120,12 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         # Steps
         pca_step = (
             ('pca', PCA(n_components=min(max_pca_components, X_train.shape[1])))
-            if perform_pca else ('noop', 'passthrough')
+            if perform_pca else ('pca_noop', 'passthrough')
         )
 
         select_step = (
             ('select', SelectKBest(score_func=select_score_func, k=min(max_selected_features, X_train.shape[1])))
-            if feature_selection else ('noop', 'passthrough')
+            if feature_selection else ('select_noop', 'passthrough')
         )
 
         pipeline = Pipeline([
@@ -176,6 +174,29 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
     return fold_metrics
 
 
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+
+
+def calculate_metrics_leave_one_out_regression(performance_df):
+    model_dfs = []
+    for model_name in performance_df['model'].unique():
+        df = performance_df[performance_df['model'] == model_name]
+        y_true = df['y_test'].tolist()
+        y_pred = df['y_pred'].tolist()
+
+        model_dfs.append(pd.DataFrame({
+            'model': [model_name],
+            'r2': [r2_score(y_true, y_pred)],
+            'mse': [mean_squared_error(y_true, y_pred)],
+            'mae': [mean_absolute_error(y_true, y_pred)],
+            'y_true': [y_true],
+            'y_pred': [y_pred],
+            'feature_importances': [calculate_feature_importance(df)]
+        }))
+
+    return pd.concat(model_dfs, ignore_index=True)
+
+
 def main():
     logging.basicConfig(
         level=logging.INFO,
@@ -185,10 +206,11 @@ def main():
     global_seed = 42
     inner_cv_seed = 50  # Fixed for reproducibility in inner CV
     tune_hyperparameters = False
-    feature_selection = True
+    feature_selection = False
     dataset_name = 'demographic+digital'
     perform_pca = False
     target_col = 'mmse'
+    is_classification = False
     performance_metrics_df = perform(
         perform_pca=perform_pca,
         dataset_name=dataset_name,
@@ -197,13 +219,13 @@ def main():
         feature_selection=feature_selection,
         tune_hyperparameters=tune_hyperparameters,
         target_col=target_col,
-        is_classification=False
+        is_classification=is_classification
     )
 
-    leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df)
+    leave_one_out_metrics_df = calculate_metrics_leave_one_out_regression(performance_metrics_df)
 
     save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters)
+                 tune_hyperparameters, is_classification)
 
 
 if __name__ == "__main__":
