@@ -572,7 +572,7 @@ def parse_args():
 
     if not is_classification:
         if args.target_col is None:
-            raise ValueError("target_col must be provided")
+            raise ValueError("For regression, target_col must be provided")
         target_col = args.target_col
     else:
         target_col = CLASSIFICATION_TARGET_COLUMN_NAME
