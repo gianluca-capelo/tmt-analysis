@@ -1,4 +1,5 @@
 import logging
+from types import MethodType
 from typing import Tuple, Dict
 
 import pandas as pd
@@ -9,6 +10,15 @@ from neurotask.tmt.model.tmt_model import *
 
 from src import config
 
+
+def load_behavior_data_csv(self):
+    behavior_path = self.session_dataset_path / "behavioral"
+    if behavior_path.exists() and len(list(behavior_path.glob("*.csv"))) == 1:
+        behavior_file = next(behavior_path.glob("*.csv"))
+        self.behavior_data = pd.read_csv(behavior_file)
+        print(f"Behavior data cargado desde {behavior_file}")
+    else:
+        raise FileNotFoundError("No se encontró un archivo .csv único en la carpeta de comportamiento.")
 
 def mock_personal_info():
     return SubjectPersonalInformation(
@@ -26,10 +36,11 @@ class PsychopyTMTMapper(TMTMapper):
     def map(self, data_path: str, metadata_path: Optional[str] = None) -> TMTExperiment:
 
         # TODO GIAN: Pendiente mapear metadata
-
+        print("data_path:", data_path, "\n\n")
         experiment = pyx.Experiment(dataset_path=data_path)
+        print("experiment.subjects:", experiment.subjects.keys())
 
-        subject_ids_list = [str(subject.subject_id) for subject in experiment.subjects]
+        subject_ids_list = [str(subject_id) for subject_id in experiment.subjects.keys()]
 
         # Convert subject_ids to strings and fill with zeros for BIDS standard
         subject_ids = [str(s).zfill(4) for s in subject_ids_list]
@@ -37,6 +48,7 @@ class PsychopyTMTMapper(TMTMapper):
         experiment = self.map_experiment(experiment, subject_ids)
 
         return experiment
+
 
     def map_experiment(self, experiment: pyx.Experiment, subject_ids: List[str]) -> TMTExperiment:
         # TODO GUS: excluirlos
@@ -46,7 +58,7 @@ class PsychopyTMTMapper(TMTMapper):
 
         tmt_subjects: Dict[str, TMTSubject] = {}
 
-        for subject_id in subject_ids:
+        for subject_id, subject in experiment.subjects.items():
 
             subject_id_int = int(subject_id)
             if subject_id_int not in config.SUBJECT_GROUP:
@@ -56,43 +68,53 @@ class PsychopyTMTMapper(TMTMapper):
             group = config.SUBJECT_GROUP[subject_id_int]
 
             logging.info(f"Processing subject: {subject_id}, group: {group}")
+            try:
+                # Load the first session data
+                print(subject.sessions.keys())
+                session = subject.sessions['experimento']
+                session.load_data("eyelink")
 
-            # Load the first session data
-            experiment_index = subject_id_int - 1
-            session = experiment[experiment_index].sessions[0]
-            session.load_data("eyelink")
+                session.load_behavior_data = MethodType(load_behavior_data_csv, session)
+                session.load_behavior_data()
+                # Extract behavior data
+                df_psychopy = session.behavior_data.iloc[1:-1].reset_index(drop=True)
+                #if self.behavior_path.exists() and len(list(self.behavior_path.glob("*.csv"))) == 1:
+                 #   behavior_data = pd.read_csv(next(self.behavior_path.glob("*.csv")))
+                  #  self.behavior_data = behavior_data
 
-            # Extract behavior data
-            df_psychopy = session.behavior_data.iloc[1:-1].reset_index(drop=True)
-            # Map (posArrayX, posArrayY) to a trial_id using config.trial_id_map
-            df_psychopy["trial_id"] = (
-                df_psychopy
-                .set_index(["posArrayX", "posArrayY"])
-                .index.map(config.trial_id_map)
-                .astype("Int64")
-            )
+                # Map (posArrayX, posArrayY) to a trial_id using config.trial_id_map
+                df_psychopy["trial_id"] = (
+                    df_psychopy
+                    .set_index(["posArrayX", "posArrayY"])
+                    .index.map(config.trial_id_map)
+                    .astype("Int64")
+                )
 
-            subject_trials = self.map_to_tmt_trials(df_psychopy)
+                subject_trials = self.map_to_tmt_trials(df_psychopy)
 
-            # Discard trials whose `order_of_appearance` is in rejected_trials
-            rejected_trials = self.get_rejected_trials()
-            valid_subject_trials = [
-                trial for trial in subject_trials
-                if trial.order_of_appearance not in rejected_trials
-            ]
+                # Discard trials whose `order_of_appearance` is in rejected_trials
+                rejected_trials = self.get_rejected_trials()
+                valid_subject_trials = [
+                    trial for trial in subject_trials
+                    if trial.order_of_appearance not in rejected_trials
+                ]
 
-            training_trials = [trial for trial in valid_subject_trials if
-                               trial.order_of_appearance in self.get_training_trials_order()]
+                training_trials = [trial for trial in valid_subject_trials if
+                                trial.order_of_appearance in self.get_training_trials_order()]
 
-            # Dice que gus que los mapeemos
-            tmt_subjects[subject_id] = TMTSubject(
-                training_trials=training_trials,
-                testing_trials=valid_subject_trials,
-                target_radius=config.RADIUS_HEIGHT,
-                canvas_size=None,
-                personal_info=mock_personal_info(),
-                session_context=None
-            )
+                # Dice que gus que los mapeemos
+                tmt_subjects[subject.subject_id] = TMTSubject(
+                    training_trials=training_trials,
+                    testing_trials=valid_subject_trials,
+                    target_radius=config.RADIUS_HEIGHT,
+                    canvas_size=None,
+                    personal_info=mock_personal_info(),
+                    session_context=None
+                )
+                logging.info(f"Mapped subject {subject.subject_id} with {len(valid_subject_trials)} valid trials.")
+            except Exception as exception:
+                logging.error(f"{subject.subject_id}: {exception}")
+                raise exception
 
         return TMTExperiment(subjects=tmt_subjects)
 
