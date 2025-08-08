@@ -45,11 +45,11 @@ def load_analysis(random_state: int,
                                                         valid_metrics_df)
 
     # 4) Save results and metadata
-    save_results(valid_metrics_df, run_dir, timestamp, random_state, eval_size, train_subject_ids, eval_subject_ids,
+    save_path = save_results(valid_metrics_df, run_dir, timestamp, random_state, eval_size, train_subject_ids, eval_subject_ids,
                  split,
                  old_split_config_date)
 
-    return valid_metrics_df
+    return valid_metrics_df, save_path
 
 
 def get_split_ids(eval_size, old_split_config_date, random_state, split, valid_metrics_df):
@@ -128,7 +128,7 @@ def save_results(
         eval_subject_ids,
         split: bool,
         old_split_config_date: str
-) -> None:
+):
     """
     Save the metrics DataFrame and configuration metadata to the run directory.
     """
@@ -142,7 +142,7 @@ def save_results(
         "test_size": test_size,
         "raw_data_dir": config_file.RAW_DATA_DIR,
         "metadata_path": config_file.METADATA_CSV,
-        "train_subject_ids": train_subject_ids,
+        "train_subject_ids": list(train_subject_ids),
         "eval_subject_ids": eval_subject_ids,
         "is_new_split": split,
         "old_split_config_date": old_split_config_date,
@@ -165,8 +165,10 @@ def save_results(
     except IOError as e:
         logging.error("Failed to write analysis CSV: %s", e)
 
+    return data_path
 
-def main():
+
+def run_analysis():
     import argparse
 
     parser = argparse.ArgumentParser(description="Run hand analysis.")
@@ -175,14 +177,6 @@ def main():
         action="store_true",
         help="Perform a split of the dataset into train and evaluation sets."
     )
-    args = parser.parse_args()
-    split = args.split
-    eval_size = None
-    if split:
-        eval_size = float(input("Enter evaluation test size (e.g., 0.2): "))
-
-    #get old split config date
-    old_split_config_date = None
     parser.add_argument(
         "--old_split_config_date",
         type=str,
@@ -191,11 +185,8 @@ def main():
     args = parser.parse_args()
     old_split_config_date = args.old_split_config_date
 
-
-
-
-    load_analysis(RANDOM_STATE, eval_size, split, old_split_config_date)
+    load_analysis(RANDOM_STATE, 1, False, old_split_config_date)
 
 
 if __name__ == "__main__":
-    main()
+    run_analysis()
