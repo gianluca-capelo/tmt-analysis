@@ -28,6 +28,8 @@ from tqdm import tqdm
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR
 from src.hand_analysis.loader.load_last_split import load_last_analysis
 
+CLASSIFICATION_TARGET_COLUMN_NAME = 'group'
+
 
 def get_target_column(target_col, df):
     last_analysis, _ = load_last_analysis()
@@ -40,25 +42,48 @@ def get_target_column(target_col, df):
     return merged_df[target_col].values
 
 
-def split_features_and_target(df, target_col):
+def split_features_and_target_for_classification(df):
+    target_col = CLASSIFICATION_TARGET_COLUMN_NAME
+
     df_copy = df.copy()
 
-    if target_col in df_copy.columns:
-        y = df_copy[target_col].values
-        df_copy = df_copy.drop(columns=['subject_id', target_col])
-    else:
-        y = get_target_column(target_col, df_copy)
-        df_copy = df_copy.drop(columns=['subject_id'])
+    if target_col not in df_copy.columns:
+        raise ValueError(f" For classification, the target column '{target_col}' must be present in the DataFrame.")
+
+    y = df_copy[target_col].values
+
+    df_copy = df_copy.drop(columns=['subject_id', target_col])
 
     X = df_copy.values
+
     feature_names = df_copy.columns
 
     return X, y, feature_names
 
 
-def join_on_subject(df1: pd.DataFrame, df2: pd.DataFrame, target_col) -> pd.DataFrame:
-    if target_col in df1.columns and target_col in df2.columns:
-        df2 = df2.drop(columns=target_col)
+def split_features_and_target_for_regression(df, target_col):
+    df_copy = df.copy()
+
+    if target_col in df_copy.columns:
+        raise ValueError(f"For regression, the target column '{target_col}' should not be present in the DataFrame.")
+
+    y = get_target_column(target_col, df_copy)
+
+    df_copy = df_copy.drop(columns=['subject_id'])
+
+    df_copy = df_copy.drop(columns=[CLASSIFICATION_TARGET_COLUMN_NAME])
+
+    X = df_copy.values
+
+    feature_names = df_copy.columns
+
+    return X, y, feature_names
+
+
+def join_on_subject(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
+    # Avoid duplicating group column if it exists in both DataFrames
+    if CLASSIFICATION_TARGET_COLUMN_NAME in df1.columns and CLASSIFICATION_TARGET_COLUMN_NAME in df2.columns:
+        df2 = df2.drop(columns=CLASSIFICATION_TARGET_COLUMN_NAME)
 
     return pd.merge(df1, df2, on='subject_id', how='inner')
 
@@ -75,7 +100,7 @@ def load_all_datasets() -> dict:
     }
 
 
-def retrieve_dataset(dataset_name, target_col):
+def retrieve_dataset(dataset_name, target_col, is_classification):
     datasets = load_all_datasets()
 
     match dataset_name:
@@ -86,23 +111,23 @@ def retrieve_dataset(dataset_name, target_col):
             df = datasets['demographic_df'].loc[datasets['df_digital_hand_and_eye'].index]
 
         case 'demographic+digital':
-            df = join_on_subject(datasets['df_digital_tmt_with_target'], datasets['demographic_df'], target_col)
+            df = join_on_subject(datasets['df_digital_tmt_with_target'], datasets['demographic_df'])
 
         case 'demographic+digital_less':
             subset = datasets['df_digital_tmt_with_target'].loc[datasets['df_digital_hand_and_eye'].index]
-            df = join_on_subject(subset, datasets['demographic_df'], target_col)
+            df = join_on_subject(subset, datasets['demographic_df'])
 
         case 'non_digital_tests':
             df = datasets['non_digital_df']
 
         case 'non_digital_tests+demo':
-            df = join_on_subject(datasets['non_digital_df'], datasets['demographic_df'], target_col)
+            df = join_on_subject(datasets['non_digital_df'], datasets['demographic_df'])
 
         case 'non_digital_test_less_subjects':
             df = datasets['non_digital_test_less_subjects']
 
         case 'non_digital_test_less_subjects+demo':
-            df = join_on_subject(datasets['non_digital_test_less_subjects'], datasets['demographic_df'], target_col)
+            df = join_on_subject(datasets['non_digital_test_less_subjects'], datasets['demographic_df'])
 
         case 'digital_test':
             df = datasets['df_digital_tmt_with_target']
@@ -114,12 +139,15 @@ def retrieve_dataset(dataset_name, target_col):
             df = datasets['df_digital_hand_and_eye']
 
         case 'hand_and_eye_demo':
-            df = join_on_subject(datasets['df_digital_hand_and_eye'], datasets['demographic_df'], target_col)
+            df = join_on_subject(datasets['df_digital_hand_and_eye'], datasets['demographic_df'])
 
         case _:
             raise ValueError(f"Dataset '{dataset_name}' not recognized.")
 
-    return split_features_and_target(df, target_col)
+    if is_classification:
+        return split_features_and_target_for_classification(df)
+    else:
+        return split_features_and_target_for_regression(df, target_col)
 
 
 def get_parameter_grid(is_classification):
@@ -192,7 +220,7 @@ def get_models(random_state: int, is_classification):
 
 def perform(perform_pca: bool, dataset_name: str, global_seed: int,
             inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool, target_col, is_classification):
-    X, y, feature_names = retrieve_dataset(dataset_name, target_col)
+    X, y, feature_names = retrieve_dataset(dataset_name, target_col, is_classification)
 
     param_grids = get_parameter_grid(is_classification)
 
@@ -204,7 +232,7 @@ def perform(perform_pca: bool, dataset_name: str, global_seed: int,
                                                       feature_selection, tune_hyperparameters,
                                                       inner_cv_seed, feature_names, is_classification)
 
-    return performance_metrics_df
+    return performance_metrics_df, feature_names
 
 
 def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
@@ -375,6 +403,7 @@ def calculate_metrics_leave_one_out_regression(performance_df, model_name):
         'feature_importances': [calculate_feature_importance(df)]
     })
 
+
 def calculate_feature_importance(model_df):
     """
     Calculates the average importance of each feature across all folds.
@@ -421,7 +450,7 @@ def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):
 
 
 def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters, is_classification, timestamp: str):
+                 tune_hyperparameters, is_classification, timestamp: str, feature_names):
     """
     Guarda los resultados y la configuración del experimento en un directorio por fecha y dataset.
 
@@ -454,13 +483,14 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
         "tune_hyperparameters": tune_hyperparameters,
         "is_classification": is_classification,
         "timestamp": timestamp,
-        "n_folds": len(performance_metrics_df)
+        "n_folds": len(performance_metrics_df),
+        "feature_names": feature_names.tolist(),
     }
 
     with open(os.path.join(dataset_dir, f"config.json"), 'w') as f:
         json.dump(config, f, indent=4)
 
-    logging.info(f"✔️ Resultados guardados en: {dataset_dir}")
+    logging.info(f"Resuls saves in: {dataset_dir}")
 
 
 def main():
@@ -474,8 +504,8 @@ def main():
     tune_hyperparameters = False
     feature_selection = True
     perform_pca = False
-    target_col = 'group'
-    is_classification = True
+    target_col = 'mmse'
+    is_classification = False
 
     # TODO GIAN: BORRAR COLUMNA GROUP CUANDO ES REGRESSION Y CLASIFICACION
 
@@ -498,7 +528,7 @@ def main():
     for dataset_name in dataset_names:
         logging.info(f"Processing dataset: {dataset_name}")
 
-        performance_metrics_df = perform(
+        performance_metrics_df, feature_names = perform(
             perform_pca=perform_pca,
             dataset_name=dataset_name,
             global_seed=global_seed,
@@ -512,7 +542,8 @@ def main():
         leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df, is_classification)
 
         save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                     tune_hyperparameters, is_classification=is_classification, timestamp=timestamp)
+                     tune_hyperparameters, is_classification=is_classification, timestamp=timestamp,
+                     feature_names=feature_names)
 
 
 if __name__ == "__main__":
