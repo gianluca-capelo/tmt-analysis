@@ -507,8 +507,6 @@ def main():
     target_col = 'mmse'
     is_classification = False
 
-    # TODO GIAN: BORRAR COLUMNA GROUP CUANDO ES REGRESSION Y CLASIFICACION
-
     dataset_names = [
         # 'demographic',
         # 'demographic_less_subjects',
