@@ -474,8 +474,8 @@ def main():
     tune_hyperparameters = False
     feature_selection = True
     perform_pca = False
-    target_col = 'mmse'
-    is_classification = False
+    target_col = 'group'
+    is_classification = True
 
     # TODO GIAN: BORRAR COLUMNA GROUP CUANDO ES REGRESSION Y CLASIFICACION
 

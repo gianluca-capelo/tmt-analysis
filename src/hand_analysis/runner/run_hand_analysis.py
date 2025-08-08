@@ -6,7 +6,7 @@ from src import config
 from src.hand_analysis.mapper.psychopy_mapper import PsychopyTMTMapper
 
 
-def log_and_run_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consecutive_points, cut_criteria):
+def log_and_run_tmt_analysis(dataset_path, output_path, correct_targets_minimum, consecutive_points, cut_criteria, calculate_crosses):
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
@@ -18,7 +18,7 @@ def log_and_run_tmt_analysis(dataset_path, output_path, correct_targets_minimum,
         output_path=output_path,
     )
 
-    hand_analysis.run(correct_targets_minimum, consecutive_points, cut_criteria=cut_criteria)
+    hand_analysis.run(correct_targets_minimum, consecutive_points, cut_criteria=cut_criteria, calculate_crosses=calculate_crosses)
     return hand_analysis
 
 
@@ -27,6 +27,7 @@ def run_analysis_with_configuration_parameters(output_path):
     threshold = config.CORRECT_THRESHOLD
     cut_criteria = config.CUT_CRITERIA
     points = config.CONSECUTIVE_POINTS
+    calculate_crosses = config.CALCULATE_CROSSES
 
     if threshold is None and cut_criteria == "MINIMUM_TARGETS":
         raise ValueError("`correct_targets_minimum` must be set when `cut_criteria` is 'MINIMUM_TARGETS'.")
@@ -36,7 +37,8 @@ def run_analysis_with_configuration_parameters(output_path):
         output_path=output_path,
         correct_targets_minimum=threshold,
         consecutive_points=points,
-        cut_criteria=cut_criteria
+        cut_criteria=cut_criteria,
+        calculate_crosses=calculate_crosses
     )
 
     # Obtenemos el DataFrame de métricas
