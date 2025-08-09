@@ -93,11 +93,11 @@ def load_all_datasets() -> dict:
     path = os.path.join(PROCESSED_FOR_MODEL_DIR)
     return {
         'df_digital_tmt_with_target': pd.read_csv(os.path.join(path, 'df_digital_tmt_with_target.csv')),
-        'demographic_df': pd.read_csv(os.path.join(path, 'demographic_df.csv')),
-        'non_digital_df': pd.read_csv(os.path.join(path, 'non_digital_df.csv')),
-        'df_digital_hand_and_eye': pd.read_csv(os.path.join(path, 'df_digital_hand_and_eye.csv')),
-        'digital_test_less_subjects': pd.read_csv(os.path.join(path, 'digital_test_less_subjects.csv')),
-        'non_digital_test_less_subjects': pd.read_csv(os.path.join(path, 'non_digital_test_less_subjects.csv')),
+        #'demographic_df': pd.read_csv(os.path.join(path, 'demographic_df.csv')),
+        #'non_digital_df': pd.read_csv(os.path.join(path, 'non_digital_df.csv')),
+        #'df_digital_hand_and_eye': pd.read_csv(os.path.join(path, 'df_digital_hand_and_eye.csv')),
+        #'digital_test_less_subjects': pd.read_csv(os.path.join(path, 'digital_test_less_subjects.csv')),
+        #'non_digital_test_less_subjects': pd.read_csv(os.path.join(path, 'non_digital_test_less_subjects.csv')),
     }
 
 
@@ -511,13 +511,13 @@ def main():
     dataset_names = [
         # 'demographic',
         # 'demographic_less_subjects',
-        'demographic+digital',
+        # 'demographic+digital',
         # 'demographic+digital_less',
         # 'non_digital_tests',
         # 'non_digital_tests+demo',
         # 'non_digital_test_less_subjects',
         # 'non_digital_test_less_subjects+demo',
-        # 'digital_test',
+        'digital_test',
         # 'digital_test_less_subjects',
         # 'hand_and_eye',
         # 'hand_and_eye_demo'

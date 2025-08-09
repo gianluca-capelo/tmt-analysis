@@ -112,6 +112,7 @@ def filter_valid(df_raw):
         ].index
 
     df_valid = df_valid[df_valid['subject_id'].isin(eligible_subjects)]
+
     print("After filtering by min number of trials:", df_valid['subject_id'].nunique())
 
     return df_valid
@@ -119,6 +120,7 @@ def filter_valid(df_raw):
 
 def build_datasets():
     df_raw, _ = load_last_analysis()
+
     df_valid = filter_valid(df_raw)
 
     digital_dataset = build_digital_dataset(df_valid)
