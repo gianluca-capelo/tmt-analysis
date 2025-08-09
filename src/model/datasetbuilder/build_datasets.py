@@ -23,8 +23,7 @@ def get_digital_tmt_vars():
     return digital_tmt_vars
 
 
-def compute_ratios_B_A(df_digital_tmt):
-    # 3. Compute B/A ratios
+def compute_B_A_ratios(df_digital_tmt):
     part_a_cols = [col for col in df_digital_tmt.columns if col.endswith('_PART_A')]
     part_b_cols = [col for col in df_digital_tmt.columns if col.endswith('_PART_B')]
     common_vars = [col.replace('_PART_A', '') for col in part_a_cols if
@@ -75,7 +74,7 @@ def build_digital_dataset(df_valid):
     # Flatten column names (e.g., mean_speed_PART_A)
     df_digital_tmt.columns = [f"{var}_{ttype}" for var, ttype in df_digital_tmt.columns]
 
-    df_digital_tmt = compute_ratios_B_A(df_digital_tmt)
+    df_digital_tmt = compute_B_A_ratios(df_digital_tmt)
 
     df_digital_tmt = df_digital_tmt.merge(df_validity_percentage,
                                           left_index=True, right_index=True)
