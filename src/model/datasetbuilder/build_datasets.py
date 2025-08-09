@@ -68,7 +68,8 @@ def build_digital_dataset(df_valid):
     df_digital_tmt = df.pivot_table(
         index='subject_id',
         columns='trial_type',
-        values=get_digital_tmt_vars()
+        values=get_digital_tmt_vars(),
+        aggfunc='mean',
     )
 
     # Flatten column names (e.g., mean_speed_PART_A)
@@ -80,12 +81,16 @@ def build_digital_dataset(df_valid):
                                           left_index=True, right_index=True)
 
     df_digital_tmt_with_target = df_digital_tmt.merge(
-        df_cognitive_group, on='subject_id', validate='one_to_one'
+        df_cognitive_group,
+        on='subject_id',
+        validate='one_to_one'
     ).set_index('subject_id')
 
-    df_digital_tmt_with_target['group'] = (df_digital_tmt_with_target['group'].str
-                                           .replace('mci', '1')
-                                           .replace('control', '0').astype(int))
+    df_digital_tmt_with_target['group'] = (
+        df_digital_tmt_with_target['group']
+        .replace({'mci': 1, 'control': 0})
+        .astype(int)
+    )
 
     return df_digital_tmt_with_target
 
