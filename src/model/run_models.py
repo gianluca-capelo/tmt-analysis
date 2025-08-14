@@ -93,11 +93,11 @@ def load_all_datasets() -> dict:
     path = os.path.join(PROCESSED_FOR_MODEL_DIR)
     return {
         'df_digital_tmt_with_target': pd.read_csv(os.path.join(path, 'df_digital_tmt_with_target.csv')),
-        #'demographic_df': pd.read_csv(os.path.join(path, 'demographic_df.csv')),
-        #'non_digital_df': pd.read_csv(os.path.join(path, 'non_digital_df.csv')),
-        #'df_digital_hand_and_eye': pd.read_csv(os.path.join(path, 'df_digital_hand_and_eye.csv')),
-        #'digital_test_less_subjects': pd.read_csv(os.path.join(path, 'digital_test_less_subjects.csv')),
-        #'non_digital_test_less_subjects': pd.read_csv(os.path.join(path, 'non_digital_test_less_subjects.csv')),
+        'demographic_df': pd.read_csv(os.path.join(path, 'demographic_df.csv')),
+        'non_digital_df': pd.read_csv(os.path.join(path, 'non_digital_df.csv')),
+        # 'df_digital_hand_and_eye': pd.read_csv(os.path.join(path, 'df_digital_hand_and_eye.csv')),
+        # 'digital_test_less_subjects': pd.read_csv(os.path.join(path, 'digital_test_less_subjects.csv')),
+        # 'non_digital_test_less_subjects': pd.read_csv(os.path.join(path, 'non_digital_test_less_subjects.csv')),
     }
 
 
@@ -108,39 +108,37 @@ def retrieve_dataset(dataset_name, target_col, is_classification):
         case 'demographic':
             df = datasets['demographic_df']
 
-        case 'demographic_less_subjects':
-            df = datasets['demographic_df'].loc[datasets['df_digital_hand_and_eye'].index]
-
         case 'demographic+digital':
             df = join_on_subject(datasets['df_digital_tmt_with_target'], datasets['demographic_df'])
-
-        case 'demographic+digital_less':
-            subset = datasets['df_digital_tmt_with_target'].loc[datasets['df_digital_hand_and_eye'].index]
-            df = join_on_subject(subset, datasets['demographic_df'])
 
         case 'non_digital_tests':
             df = datasets['non_digital_df']
 
-        case 'non_digital_tests+demo':
-            df = join_on_subject(datasets['non_digital_df'], datasets['demographic_df'])
-
-        case 'non_digital_test_less_subjects':
-            df = datasets['non_digital_test_less_subjects']
-
-        case 'non_digital_test_less_subjects+demo':
-            df = join_on_subject(datasets['non_digital_test_less_subjects'], datasets['demographic_df'])
-
         case 'digital_test':
             df = datasets['df_digital_tmt_with_target']
 
-        case 'digital_test_less_subjects':
-            df = datasets['digital_test_less_subjects']
+        case 'non_digital_tests+demo':
+            df = join_on_subject(datasets['non_digital_df'], datasets['demographic_df'])
 
-        case 'hand_and_eye':
-            df = datasets['df_digital_hand_and_eye']
-
-        case 'hand_and_eye_demo':
-            df = join_on_subject(datasets['df_digital_hand_and_eye'], datasets['demographic_df'])
+        # case 'demographic_less_subjects':
+        #     df = datasets['demographic_df'].loc[datasets['df_digital_hand_and_eye'].index]
+        # case 'demographic+digital_less':
+        #     subset = datasets['df_digital_tmt_with_target'].loc[datasets['df_digital_hand_and_eye'].index]
+        #     df = join_on_subject(subset, datasets['demographic_df'])
+        # case 'non_digital_test_less_subjects':
+        #     df = datasets['non_digital_test_less_subjects']
+        #
+        # case 'non_digital_test_less_subjects+demo':
+        #     df = join_on_subject(datasets['non_digital_test_less_subjects'], datasets['demographic_df'])
+        #
+        # case 'digital_test_less_subjects':
+        #     df = datasets['digital_test_less_subjects']
+        #
+        # case 'hand_and_eye':
+        #     df = datasets['df_digital_hand_and_eye']
+        #
+        # case 'hand_and_eye_demo':
+        #     df = join_on_subject(datasets['df_digital_hand_and_eye'], datasets['demographic_df'])
 
         case _:
             raise ValueError(f"Dataset '{dataset_name}' not recognized.")
@@ -511,13 +509,13 @@ def main():
     dataset_names = [
         # 'demographic',
         # 'demographic_less_subjects',
-        # 'demographic+digital',
+        'demographic+digital',
         # 'demographic+digital_less',
         # 'non_digital_tests',
         # 'non_digital_tests+demo',
         # 'non_digital_test_less_subjects',
         # 'non_digital_test_less_subjects+demo',
-        'digital_test',
+        # 'digital_test',
         # 'digital_test_less_subjects',
         # 'hand_and_eye',
         # 'hand_and_eye_demo'
