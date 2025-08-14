@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -52,15 +53,46 @@ def compute_validity_percentage(df):
 
 
 def get_cognitive_group(df):
+    columns = ['group']
+
+    return get_subjects_data(columns, df)
+
+
+def get_subjects_data(columns, df):
     df_subject = df.drop_duplicates(subset='subject_id', keep='first')
-    df_cognitive_group = df_subject[['subject_id', 'group']].copy()
+    subject_column = 'subject_id'
+    columns = [subject_column] + columns
+    df_cognitive_group = df_subject[columns].copy()
     return df_cognitive_group
+
+
+def get_demographic_data(df):
+    columns = get_demographic_columns()
+
+    return get_subjects_data(columns, df)
+
+
+def get_demographic_columns():
+    return ['sex', 'age', 'years_of_education']
+
+
+def get_non_digital_data(df):
+    columns = get_non_digital_columns()
+    return get_subjects_data(columns, df)
+
+
+def get_non_digital_columns():
+    return ['mmse', 'tmt_a_raw', 'tmt_a_z', 'tmt_b_raw', 'tmt_b_z',
+            'digit_symbol_raw', 'digit_symbol_z', 'forward_digit_span_raw',
+            'forward_digit_span_z', 'backward_digit_span_raw', 'backward_digit_span_z',
+            'clock_drawing_test']
 
 
 def build_digital_dataset(df_valid):
     df = df_valid.copy()
 
-    df_cognitive_group = get_cognitive_group(df)
+    df_cognitive_group = get_cognitive_group(df_valid)
+
 
     df_validity_percentage = compute_validity_percentage(df)
 
@@ -85,12 +117,6 @@ def build_digital_dataset(df_valid):
         validate='one_to_one'
     ).set_index('subject_id')
 
-    df_digital_tmt_with_target['group'] = (
-        df_digital_tmt_with_target['group']
-        .replace({'mci': 1, 'control': 0})
-        .astype(int)
-    )
-
     return df_digital_tmt_with_target
 
 
@@ -99,13 +125,13 @@ def filter_valid(df_raw):
     min_age = 56
     min_number_of_trials_by_type = 1
 
-    print("Initial unique subjects:", df['subject_id'].nunique())
+    logging.info("Initial unique subjects:", df['subject_id'].nunique())
 
     df_valid = df[df["is_valid"]]
-    print("After filtering valid trials:", df_valid['subject_id'].nunique())
+    logging.info("After filtering valid trials:", df_valid['subject_id'].nunique())
 
     df_valid = df_valid[df_valid['age'] >= min_age]
-    print(f"After filtering by age >= {min_age}:", df_valid['subject_id'].nunique())
+    logging.info(f"After filtering by age >= {min_age}:", df_valid['subject_id'].nunique())
 
     # Keep subjects with at least one valid PART_A and PART_B trial
     valid_counts = df_valid.groupby(['subject_id', 'trial_type']).size().unstack(fill_value=0)
@@ -117,7 +143,7 @@ def filter_valid(df_raw):
 
     df_valid = df_valid[df_valid['subject_id'].isin(eligible_subjects)]
 
-    print("After filtering by min number of trials:", df_valid['subject_id'].nunique())
+    logging.info("After filtering by min number of trials:", df_valid['subject_id'].nunique())
 
     return df_valid
 
@@ -126,7 +152,11 @@ def build_datasets():
     df_raw, _ = load_last_analysis()
 
     df_valid = filter_valid(df_raw)
-
+    df_valid['group'] = (
+        df_valid['group']
+        .replace({'mci': 1, 'control': 0})
+        .astype(int)
+    )
     digital_dataset = build_digital_dataset(df_valid)
 
     os.makedirs(PROCESSED_FOR_MODEL_DIR, exist_ok=True)
@@ -134,7 +164,20 @@ def build_datasets():
     digital_dataset.to_csv(os.path.join(PROCESSED_FOR_MODEL_DIR, 'df_digital_tmt_with_target.csv'),
                            index_label='subject_id')
 
+    digital_dataset_subjects = digital_dataset.index.tolist()
+
+    demographic_df = get_demographic_data(df_valid)
+    demographic_df = demographic_df[demographic_df['subject_id'].isin(digital_dataset_subjects)]
+    demographic_df = demographic_df.set_index('subject_id')
+    demographic_df.to_csv(os.path.join(PROCESSED_FOR_MODEL_DIR, 'demographic_df.csv'),
+                            index_label='subject_id')
+
+    non_digital_df = get_non_digital_data(df_valid)
+    non_digital_df = non_digital_df[non_digital_df['subject_id'].isin(digital_dataset_subjects)]
+    non_digital_df = non_digital_df.set_index('subject_id')
+    non_digital_df.to_csv(os.path.join(PROCESSED_FOR_MODEL_DIR, 'non_digital_df.csv'),
+                            index_label='subject_id')
+
 
 if __name__ == "__main__":
     build_datasets()
-    print("Datasets built successfully.")
