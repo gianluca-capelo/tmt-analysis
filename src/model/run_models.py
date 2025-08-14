@@ -66,9 +66,13 @@ def split_features_and_target_for_regression(df, target_col):
     df_copy = df.copy()
 
     if target_col in df_copy.columns:
-        raise ValueError(f"For regression, the target column '{target_col}' should not be present in the DataFrame.")
-
-    y = get_target_column(target_col, df_copy)
+        y = df_copy[target_col].values
+        #TODO GIAN: por las dudas, dsp borrar esta linea
+        df_copy = df_copy.drop(columns=[target_col])
+        assert np.array_equal(y, get_target_column(target_col, df_copy)), \
+            f"Target column '{target_col}' values do not match with the last analysis DataFrame"
+    else:
+        y = get_target_column(target_col, df_copy)
 
     df_copy = df_copy.drop(columns=['subject_id'])
 
@@ -507,15 +511,16 @@ def main():
     perform_pca = False
 
     dataset_names = [
-        # 'demographic',
-        # 'demographic_less_subjects',
+        'demographic',
+        'digital_test',
         'demographic+digital',
+        'non_digital_tests',
+        'non_digital_tests+demo',
+
+        # 'demographic_less_subjects',
         # 'demographic+digital_less',
-        # 'non_digital_tests',
-        # 'non_digital_tests+demo',
         # 'non_digital_test_less_subjects',
         # 'non_digital_test_less_subjects+demo',
-        # 'digital_test',
         # 'digital_test_less_subjects',
         # 'hand_and_eye',
         # 'hand_and_eye_demo'
