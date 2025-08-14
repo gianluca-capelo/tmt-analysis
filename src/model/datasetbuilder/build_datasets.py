@@ -67,18 +67,16 @@ def get_subjects_data(columns, df):
 
 
 def get_demographic_data(df):
-    columns = get_demographic_columns()
-
+    columns = get_demographic_columns() + ['group']
     return get_subjects_data(columns, df)
-
-
-def get_demographic_columns():
-    return ['sex', 'age', 'years_of_education']
 
 
 def get_non_digital_data(df):
-    columns = get_non_digital_columns()
+    columns = get_non_digital_columns() + ['group']
     return get_subjects_data(columns, df)
+
+def get_demographic_columns():
+    return ['sex', 'age', 'years_of_education']
 
 
 def get_non_digital_columns():
