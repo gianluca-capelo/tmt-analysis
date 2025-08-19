@@ -1,12 +1,10 @@
-import ast
-import glob
 import os
-
+from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import roc_curve, auc
 
-from src.config import CLASSIFICATION_RESULTS_DIR
+from src.config import CLASSIFICATION_RESULTS_DIR, DATASETS_PLOT, DATASETS_PLOT_FOLDER
 
 
 def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = None, datasets_filter: list = None):
@@ -26,75 +24,119 @@ def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = N
         Lista con los nombres exactos de datasets a incluir (coinciden con los usados en save_results).
         Si None, se usan todos los datasets.
     """
-    results_dir = os.path.join(CLASSIFICATION_RESULTS_DIR, date_folder)
-    leave_one_out_files = glob.glob(os.path.join(results_dir, "*_leave_one_out.csv"))
+    results_dir = Path(os.path.join(CLASSIFICATION_RESULTS_DIR, date_folder))
 
-    auc_list = []
+    # ───────────────────────────────────────────────────────────────
+    # Load all summary.csv into one dataframe
+    # ───────────────────────────────────────────────────────────────
+    summary_paths = [f for f in results_dir.rglob("summary.csv") 
+                     if (datasets_filter is None) or (f.parent.name in datasets_filter)]
 
-    for file_path in leave_one_out_files:
-        dataset_name = os.path.basename(file_path).replace("_leave_one_out.csv", "")
 
-        # Si hay filtro de datasets, aplicarlo
-        if datasets_filter and dataset_name not in datasets_filter:
-            continue
+    all_summary_dfs = []
 
-        df = pd.read_csv(file_path)
-        df['y_true'] = df['y_true'].apply(ast.literal_eval)
-        df['y_pred_proba'] = df['y_pred_proba'].apply(ast.literal_eval)
 
-        for _, row in df.iterrows():
-            model_name = row['model']
-            y_true = row['y_true']
-            y_pred_proba = row['y_pred_proba']
-            fpr, tpr, _ = roc_curve(y_true, y_pred_proba)
-            roc_auc = auc(fpr, tpr)
-            auc_list.append({
-                "dataset": dataset_name,
-                "model": model_name,
-                "fpr": fpr,
-                "tpr": tpr,
-                "auc": roc_auc
-            })
+    for path in summary_paths:
+        df = pd.read_csv(path)
+        dataset = path.parent.name
+        df['dataset'] = dataset
+        df['parent_date'] = path.parents[1].name  # e.g. 2025-08-19_1224
+        all_summary_dfs.append(df)
 
-    # Ordenar por AUC y quedarnos con los top_n
-    top_auc = sorted(auc_list, key=lambda x: x["auc"], reverse=True)[:top_n]
+    all_summaries = pd.concat(all_summary_dfs, ignore_index=True)
 
-    # Graficar
-    plt.figure(figsize=(10, 8))
-    for entry in top_auc:
-        plt.plot(entry["fpr"], entry["tpr"], lw=1.5,
-                 label=f"{entry['dataset']} | {entry['model']} (AUC = {entry['auc']:.2f})")
+    print("Combined shape:", all_summaries.shape)
+    print("all_summaries['dataset'].unique():", all_summaries['dataset'].unique())
+    
+    # ───────────────────────────────────────────────────────────────
+    # Get best AUC per dataset
+    # ───────────────────────────────────────────────────────────────
+    best_per_dataset = []
+    for dataset, group in all_summaries.groupby("dataset"):
+        best_idx = None
+        best_auc = -1
+        for idx, row in group.iterrows():
+            try:
+                y_true = eval(row['y_true']) if isinstance(row['y_true'], str) else row['y_true']
+                y_pred_proba = eval(row['y_pred_proba']) if isinstance(row['y_pred_proba'], str) else row['y_pred_proba']
+                fpr, tpr, _ = roc_curve(y_true, y_pred_proba)
+                roc_auc = auc(fpr, tpr)
+            except Exception:
+                continue
+            if roc_auc > best_auc:
+                best_auc = roc_auc
+                best_idx = idx
+        if best_idx is not None:
+            best_per_dataset.append(all_summaries.loc[best_idx])
 
-    plt.plot([0, 1], [0, 1], linestyle='--', color='gray', lw=1)
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title(f"ROC Curves - Top {top_n} modelos/datasets")
-    plt.legend(fontsize=8, loc="lower right")
+    best_df = pd.DataFrame(best_per_dataset)
+
+    # ───────────────────────────────────────────────────────────────
+    # Define groups, colors, and linestyles
+    # ───────────────────────────────────────────────────────────────
+    group_map = {
+        'non_digital_tests': 'non_digital',
+        'non_digital_tests+demo': 'non_digital',
+        'demographic': 'demographic',
+        'demographic+digital': 'digital',
+        'digital_test': 'digital'
+    }
+
+    # Color-blind friendly palette
+    group_colors = {
+        'non_digital': '#1f77b4',   # blue
+        'demographic': '#2ca02c',   # green
+        'digital': '#d62728'        # red
+    }
+
+    group_linestyles = {
+        'non_digital': 'solid',
+        'demographic': 'solid',
+        'digital': 'solid'
+    }
+
+    # ───────────────────────────────────────────────────────────────
+    # Plot ROC curves
+    # ───────────────────────────────────────────────────────────────
+    plt.figure(figsize=(8, 7))
+
+    for idx, row in best_df.iterrows():
+        y_true = eval(row['y_true']) if isinstance(row['y_true'], str) else row['y_true']
+        y_pred_proba = eval(row['y_pred_proba']) if isinstance(row['y_pred_proba'], str) else row['y_pred_proba']
+        dataset = row['dataset']
+        group = group_map.get(dataset, "other")
+
+        fpr, tpr, _ = roc_curve(y_true, y_pred_proba)
+        roc_auc = auc(fpr, tpr)
+
+        plt.plot(fpr, tpr,
+                color=group_colors[group],
+                linestyle=group_linestyles[group],
+                lw=2.5,
+                label=f"{dataset} (AUC={roc_auc:.2f})")
+
+    # Diagonal reference
+    plt.plot([0, 1], [0, 1], color='grey', lw=1.5, linestyle='--')
+
+    # Formatting for paper
+    plt.title("Best ROC per Dataset", fontsize=16, weight='bold')
+    plt.xlabel("False Positive Rate", fontsize=14)
+    plt.ylabel("True Positive Rate", fontsize=14)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.legend(loc='lower right', fontsize=11, frameon=False)
+    plt.grid(alpha=0.3)
+
     plt.tight_layout()
-
-    if save_path:
-        plt.savefig(save_path, dpi=300)
-
+    plt.savefig(save_path)
     plt.show()
 
 
+
 if __name__ == "__main__":
-    date_folder = "2025-08-06"
-    save_path = os.path.join(CLASSIFICATION_RESULTS_DIR, f"{date_folder}_roc_curves.png")
-    datasets_filter = [
-        'demographic',
-        #'demographic_less_subjects',
-        #'demographic+digital',
-        #'demographic+digital_less',
-        #'non_digital_tests',
-        #'non_digital_tests+demo',
-        #'non_digital_test_less_subjects',
-        #'non_digital_test_less_subjects+demo',
-        'digital_test',
-        'digital_test_less_subjects',
-        #'hand_and_eye',
-        #'hand_and_eye_demo'
-    ]
+    date_folder = DATASETS_PLOT_FOLDER
+    save_path = os.path.join(CLASSIFICATION_RESULTS_DIR, date_folder, "classification_roc_curves.png")
+    datasets_filter = DATASETS_PLOT or None
 
     plot_top_n_datasets_roc(date_folder, 20, save_path, datasets_filter)
 
