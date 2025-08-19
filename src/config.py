@@ -23,7 +23,7 @@ EVAL_SET_PATH = os.path.join(DATA_DIR, "hand_analysis", "eval_set.csv")
 PYXATIONS_PATIENTS_DATASET_NAME = "patients_data_pyxations"
 PYXATIONS_PATIENTS_DATA_DIR = os.path.join(DATA_DIR, PYXATIONS_PATIENTS_DATASET_NAME)
 
-RAW_DATA_DIR = os.path.join(DATA_DIR, "patients_data-20241125T131325Z-001/patients_data")
+RAW_DATA_DIR = os.path.join(DATA_DIR, "patients_data")
 RAW_WITH_NO_PLACEHOLDERS_DIR = os.path.join(DATA_DIR, "patients_data_no_placeholders")
 FILTERED_DATA_DIR = os.path.join(DATA_DIR, "patients_data_filtered")
 LOGGING_CONFIG = {
@@ -41,6 +41,8 @@ CORRECT_THRESHOLD = 8
 CONSECUTIVE_POINTS = 5
 CUT_CRITERIA = "MINIMUM_TARGETS"
 CALCULATE_CROSSES = False
+DATASETS_PLOT = None
+DATASETS_PLOT_FOLDER = "2025-08-19_1224"
 
 # Subjects classification
 SUBJECT_GROUP = {**{i: "control" for i in
