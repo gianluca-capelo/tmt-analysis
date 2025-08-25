@@ -24,7 +24,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
+from sklearn.svm import SVC, SVR
 from tqdm import tqdm
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
@@ -215,11 +215,11 @@ def get_models(random_state: int, is_classification):
     else:
         return [
             RandomForestRegressor(random_state=random_state, n_jobs=-1),
-            # SVR(kernel="linear", C=1e5, epsilon=0.00001), #TODO GIAN: porque se traba?
+            SVR(),
             LinearRegression(n_jobs=-1),
             Ridge(random_state=random_state),
-            Lasso(max_iter=10000, random_state=random_state, alpha=0.0001),
-            xgb.XGBRegressor(random_state=random_state, tree_method="hist", n_jobs=-1),
+            Lasso(random_state=random_state),
+            xgb.XGBRegressor(random_state=random_state, n_jobs=-1),
             DummyRegressor()
         ]
 
@@ -324,7 +324,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             best_model = pipeline
 
         # Only compute importance if PCA is OFF
-        if not perform_pca:  # TODO GIAN: adaptar a regresion
+        if not perform_pca and is_classification:  # TODO GIAN:
             importance_dict = calculate_feature_importance_for_fold(X_train, best_model, feature_names,
                                                                     feature_selection, model_name)
         else:
@@ -523,10 +523,6 @@ def main():
 
 def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
                    target_col, timestamp, tune_hyperparameters):
-
-    if perform_pca and feature_selection:
-        raise ValueError("For now, it is not allowed to perform both PCA and feature selection.")
-
     performance_metrics_df, feature_names = perform(
         perform_pca=perform_pca,
         dataset_name=dataset_name,
