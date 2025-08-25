@@ -518,14 +518,6 @@ def main():
         'demographic+digital',
         'non_digital_tests',
         'non_digital_tests+demo',
-
-        # 'demographic_less_subjects',
-        # 'demographic+digital_less',
-        # 'non_digital_test_less_subjects',
-        # 'non_digital_test_less_subjects+demo',
-        # 'digital_test_less_subjects',
-        # 'hand_and_eye',
-        # 'hand_and_eye_demo'
     ]
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
