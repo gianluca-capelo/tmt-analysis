@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn.decomposition import PCA
+from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
@@ -217,7 +218,8 @@ def get_models(random_state: int, is_classification):
             LinearRegression(n_jobs=-1),
             Ridge(random_state=random_state),
             Lasso(max_iter=10000, random_state=random_state, alpha=0.0001),
-            xgb.XGBRegressor(random_state=random_state, tree_method="hist", n_jobs=-1)
+            xgb.XGBRegressor(random_state=random_state, tree_method="hist", n_jobs=-1),
+            DummyRegressor()
         ]
 
 
