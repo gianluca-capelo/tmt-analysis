@@ -8,7 +8,6 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from notebooks.regression_review import tune_hyperparameters
 from sklearn.decomposition import PCA
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
@@ -28,7 +27,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from tqdm import tqdm
 
-from
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
     MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS
 from src.hand_analysis.loader.load_last_split import load_last_analysis
@@ -326,7 +324,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             best_model = pipeline
 
         # Only compute importance if PCA is OFF
-        if not perform_pca and is_classification:  # TODO GIAN: adaptar a regresion
+        if not perform_pca:  # TODO GIAN: adaptar a regresion
             importance_dict = calculate_feature_importance_for_fold(X_train, best_model, feature_names,
                                                                     feature_selection, model_name)
         else:
@@ -525,6 +523,10 @@ def main():
 
 def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
                    target_col, timestamp, tune_hyperparameters):
+
+    if perform_pca and feature_selection:
+        raise ValueError("For now, it is not allowed to perform both PCA and feature selection.")
+
     performance_metrics_df, feature_names = perform(
         perform_pca=perform_pca,
         dataset_name=dataset_name,
@@ -543,6 +545,7 @@ def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run classification or regression pipelines.")
+
     parser.add_argument(
         "--task",
         choices=["classification", "regression"],
