@@ -71,10 +71,7 @@ def permutation_test(y_true, y_pred, n_permutations=1000, seed=42, metric='auc')
     return true_score, p_value
 
 
-def compute_permutation_tests(date_folder: str, task: str, datasets_filter: list = None, metric: str = "auc"):
-    task_results_dir = CLASSIFICATION_RESULTS_DIR if task == "classification" else REGRESSION_RESULTS_DIR
-    results_dir = Path(os.path.join(task_results_dir, date_folder))
-
+def compute_permutation_tests(results_dir: str, task: str, datasets_filter: list = None, metric: str = "auc"):
     y_pred_column = 'y_pred_proba' if task == "classification" else 'y_pred'
 
     summary_paths = [f for f in results_dir.rglob("summary.csv")
@@ -91,18 +88,38 @@ def compute_permutation_tests(date_folder: str, task: str, datasets_filter: list
 
     all_summaries = pd.concat(all_summary_dfs, ignore_index=True)
 
-    best_df = pd.DataFrame(all_summaries)
+    results = []
 
-    for idx, row in best_df.iterrows():
+    for idx, row in all_summaries.iterrows():
         y_true = eval(row['y_true']) if isinstance(row['y_true'], str) else row['y_true']
         y_pred = eval(row[y_pred_column]) if isinstance(row[y_pred_column], str) else row[y_pred_column]
         score, p_value = permutation_test(y_true, y_pred, n_permutations=1000, metric=metric)
 
+        results.append({
+            "Dataset": row['dataset'],
+            "Model": row['model'],
+            "score": score,
+            "metric": metric,
+            "p_value": p_value
+        })
         print(
             f"Dataset: {row['dataset']}, Model: {row['model']}, {metric.upper()}: {score:.4f}, p-value: {p_value:.4f}"
         )
         print("---" * 100)
 
+    return pd.DataFrame(results)
+
+
+def run_permutation_tests(task: str, date_folder: str):
+
+    task_results_dir = CLASSIFICATION_RESULTS_DIR if task == "classification" else REGRESSION_RESULTS_DIR
+
+    results_dir = Path(os.path.join(task_results_dir, date_folder))
+
+    results_df = compute_permutation_tests(results_dir, metric="mae", task=task)
+
+    results_df.to_csv(results_dir / "permutation_test_results.csv", index=False)
+
 
 if __name__ == "__main__":
-    compute_permutation_tests("2025-08-25_1821", task="regression", metric="mae")
+    run_permutation_tests(task='regression', date_folder="2025-08-25_1821")
