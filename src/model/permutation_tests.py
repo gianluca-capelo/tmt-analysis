@@ -111,12 +111,12 @@ def compute_permutation_tests(results_dir: Path, task: str, datasets_filter: lis
     return pd.DataFrame(results)
 
 
-def run_permutation_tests(task: str, date_folder: str):
+def run_permutation_tests(task: str, date_folder: str, metric:str):
     task_results_dir = CLASSIFICATION_RESULTS_DIR if task == "classification" else REGRESSION_RESULTS_DIR
 
     results_dir = Path(os.path.join(task_results_dir, date_folder))
 
-    results_df = compute_permutation_tests(results_dir, metric="mae", task=task)
+    results_df = compute_permutation_tests(results_dir, metric=metric, task=task)
 
     results_path = results_dir / "permutation_test_results.csv"
     results_df.to_csv(results_path, index=False)
@@ -125,4 +125,4 @@ def run_permutation_tests(task: str, date_folder: str):
 
 
 if __name__ == "__main__":
-    run_permutation_tests(task='regression', date_folder="2025-08-25_1821")
+    run_permutation_tests(task='regression', date_folder="2025-08-25_1821", metric = 'mae')
