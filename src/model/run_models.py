@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn.decomposition import PCA
+from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
@@ -23,10 +24,11 @@ from sklearn.metrics import (
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
+from sklearn.svm import SVC, SVR
 from tqdm import tqdm
 
-from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR
+from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
+    MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS
 from src.hand_analysis.loader.load_last_split import load_last_analysis
 
 CLASSIFICATION_TARGET_COLUMN_NAME = 'group'
@@ -67,7 +69,7 @@ def split_features_and_target_for_regression(df, target_col):
 
     if target_col in df_copy.columns:
         y = df_copy[target_col].values
-        #TODO GIAN: por las dudas, dsp borrar esta linea
+        # TODO GIAN: por las dudas, dsp borrar esta linea
         df_copy = df_copy.drop(columns=[target_col])
         assert np.array_equal(y, get_target_column(target_col, df_copy)), \
             f"Target column '{target_col}' values do not match with the last analysis DataFrame"
@@ -99,9 +101,6 @@ def load_all_datasets() -> dict:
         'df_digital_tmt_with_target': pd.read_csv(os.path.join(path, 'df_digital_tmt_with_target.csv')),
         'demographic_df': pd.read_csv(os.path.join(path, 'demographic_df.csv')),
         'non_digital_df': pd.read_csv(os.path.join(path, 'non_digital_df.csv')),
-        # 'df_digital_hand_and_eye': pd.read_csv(os.path.join(path, 'df_digital_hand_and_eye.csv')),
-        # 'digital_test_less_subjects': pd.read_csv(os.path.join(path, 'digital_test_less_subjects.csv')),
-        # 'non_digital_test_less_subjects': pd.read_csv(os.path.join(path, 'non_digital_test_less_subjects.csv')),
     }
 
 
@@ -123,26 +122,6 @@ def retrieve_dataset(dataset_name, target_col, is_classification):
 
         case 'non_digital_tests+demo':
             df = join_on_subject(datasets['non_digital_df'], datasets['demographic_df'])
-
-        # case 'demographic_less_subjects':
-        #     df = datasets['demographic_df'].loc[datasets['df_digital_hand_and_eye'].index]
-        # case 'demographic+digital_less':
-        #     subset = datasets['df_digital_tmt_with_target'].loc[datasets['df_digital_hand_and_eye'].index]
-        #     df = join_on_subject(subset, datasets['demographic_df'])
-        # case 'non_digital_test_less_subjects':
-        #     df = datasets['non_digital_test_less_subjects']
-        #
-        # case 'non_digital_test_less_subjects+demo':
-        #     df = join_on_subject(datasets['non_digital_test_less_subjects'], datasets['demographic_df'])
-        #
-        # case 'digital_test_less_subjects':
-        #     df = datasets['digital_test_less_subjects']
-        #
-        # case 'hand_and_eye':
-        #     df = datasets['df_digital_hand_and_eye']
-        #
-        # case 'hand_and_eye_demo':
-        #     df = join_on_subject(datasets['df_digital_hand_and_eye'], datasets['demographic_df'])
 
         case _:
             raise ValueError(f"Dataset '{dataset_name}' not recognized.")
@@ -213,11 +192,12 @@ def get_models(random_state: int, is_classification):
     else:
         return [
             RandomForestRegressor(random_state=random_state, n_jobs=-1),
-            # SVR(kernel="linear", C=1e5, epsilon=0.00001), #TODO GIAN: porque se traba?
+            SVR(),
             LinearRegression(n_jobs=-1),
             Ridge(random_state=random_state),
-            Lasso(max_iter=10000, random_state=random_state, alpha=0.0001),
-            xgb.XGBRegressor(random_state=random_state, tree_method="hist", n_jobs=-1)
+            Lasso(random_state=random_state),
+            xgb.XGBRegressor(random_state=random_state, n_jobs=-1),
+            DummyRegressor()
         ]
 
 
@@ -321,7 +301,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             best_model = pipeline
 
         # Only compute importance if PCA is OFF
-        if not perform_pca and is_classification:  # TODO GIAN: adaptar a regresion
+        if not perform_pca and is_classification:  # TODO GIAN:
             importance_dict = calculate_feature_importance_for_fold(X_train, best_model, feature_names,
                                                                     feature_selection, model_name)
         else:
@@ -504,34 +484,18 @@ def main():
 
     is_classification, target_col = parse_args()
 
-    global_seed = 42
-    inner_cv_seed = 50  # Fixed for reproducibility in inner CV
-    tune_hyperparameters = False
-    feature_selection = True
-    perform_pca = False
-
-    dataset_names = [
-        'demographic',
-        'digital_test',
-        'demographic+digital',
-        'non_digital_tests',
-        'non_digital_tests+demo',
-
-        # 'demographic_less_subjects',
-        # 'demographic+digital_less',
-        # 'non_digital_test_less_subjects',
-        # 'non_digital_test_less_subjects+demo',
-        # 'digital_test_less_subjects',
-        # 'hand_and_eye',
-        # 'hand_and_eye_demo'
-    ]
-
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
-    for dataset_name in dataset_names:
+    for dataset_name in DATASETS:
         logging.info(f"Processing dataset: {dataset_name}")
 
-        run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
-                       target_col, timestamp, tune_hyperparameters)
+        run_experiment(dataset_name,
+                       PERFORM_FEATURE_SELECTION,
+                       MODEL_OUTER_SEED,
+                       MODEL_INNER_SEED,
+                       is_classification,
+                       PERFORM_PCA,
+                       target_col, timestamp,
+                       tune_hyperparameters=TUNE_HYPERPARAMETERS)
 
 
 def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
@@ -554,6 +518,7 @@ def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, 
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run classification or regression pipelines.")
+
     parser.add_argument(
         "--task",
         choices=["classification", "regression"],

@@ -42,7 +42,7 @@ CONSECUTIVE_POINTS = 5
 CUT_CRITERIA = "MINIMUM_TARGETS"
 CALCULATE_CROSSES = False
 DATASETS_PLOT = None
-DATASETS_PLOT_FOLDER = "2025-08-18_1642"
+DATASETS_PLOT_FOLDER = "2025-08-26_1551"
 
 # Subjects classification
 SUBJECT_GROUP = {**{i: "control" for i in
@@ -126,3 +126,18 @@ trial_id_map = {(
 # 96 has Parkinson
 # 55 and 71: additional subjects to exclude from analysis
 MANUAL_REJECTED_SUBJECTS = {25, 32, 33, 55, 56, 71, 75, 80, 96}
+
+
+DATASETS = [
+        'demographic',
+        'digital_test',
+        'demographic+digital',
+        'non_digital_tests',
+        'non_digital_tests+demo',
+    ]
+
+MODEL_OUTER_SEED = 42
+MODEL_INNER_SEED = 50
+PERFORM_PCA = False
+TUNE_HYPERPARAMETERS = False
+PERFORM_FEATURE_SELECTION = True
