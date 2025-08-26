@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.metrics import roc_curve, auc
 
 from src.config import CLASSIFICATION_RESULTS_DIR, DATASETS_PLOT, DATASETS_PLOT_FOLDER
-from src.model.permutation_tests import permutation_test_auc
+from src.model.permutation_tests import permutation_test
 
 
 def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = None, datasets_filter: list = None):
@@ -101,7 +101,7 @@ def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = N
     for idx, row in best_df.iterrows():
         y_true = eval(row['y_true']) if isinstance(row['y_true'], str) else row['y_true']
         y_pred_proba = eval(row['y_pred_proba']) if isinstance(row['y_pred_proba'], str) else row['y_pred_proba']
-        auc_score, p_val = permutation_test_auc(y_true, y_pred_proba, n_permutations=1000)
+        auc_score, p_val = permutation_test(y_true, y_pred_proba, n_permutations=1000)
         print(f"{row['model']} on {row['dataset']} → AUC = {auc_score:.3f}, p = {p_val:.4f}")
 
         dataset = row['dataset']

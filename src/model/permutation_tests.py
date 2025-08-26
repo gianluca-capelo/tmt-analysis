@@ -14,23 +14,35 @@ def _select_metric(metric: str):
     """
     name = str(metric).lower()
     if name == "auc":
-        return roc_auc_score, True  # mayor es mejor
+        return roc_auc_score, True
     if name == "r2":
         return r2_score, True
     if name == "mse":
-        return mean_squared_error, False  # menor es mejor
+        return mean_squared_error, False
     if name == "mae":
         return mean_absolute_error, False
 
     raise ValueError("Unknown metric: {}".format(metric))
 
 
-def permutation_test_auc(y_true, y_pred_proba, n_permutations=1000, seed=42, metric='auc'):
-    rng = np.random.RandomState(seed)
+def permutation_test(y_true, y_pred, n_permutations=1000, seed=42, metric='auc'):
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+
+    if y_true.shape[0] != y_pred.shape[0]:
+        raise ValueError("y_true y y_pred deben tener la misma longitud.")
+    if not np.all(np.isfinite(y_pred)):
+        raise ValueError("y_pred contiene valores no finitos.")
+
+    if metric.lower() == "auc":
+        if np.unique(y_true).size < 2:
+            raise ValueError("Para AUC, y_true debe contener al menos dos clases (p. ej., 0 y 1).")
+
+    rng = np.random.default_rng(seed)
 
     scoring_fn, higher_score_is_better = _select_metric(metric)
 
-    true_score = scoring_fn(y_true, y_pred_proba)
+    true_score = scoring_fn(y_true, y_pred)
 
     permuted_scores = []
     attempts = 0
@@ -39,7 +51,7 @@ def permutation_test_auc(y_true, y_pred_proba, n_permutations=1000, seed=42, met
     while len(permuted_scores) < n_permutations and attempts < max_attempts:
         y_permuted = rng.permutation(y_true)
         try:
-            permuted_auc_score = scoring_fn(y_permuted, y_pred_proba)
+            permuted_auc_score = scoring_fn(y_permuted, y_pred)
             permuted_scores.append(permuted_auc_score)
         except ValueError:
             pass  # Skip failed permutations
@@ -59,7 +71,7 @@ def permutation_test_auc(y_true, y_pred_proba, n_permutations=1000, seed=42, met
     return true_score, p_value
 
 
-def compute_permutation_tests(date_folder: str, task: str, datasets_filter: list = None, metric:str = "auc"):
+def compute_permutation_tests(date_folder: str, task: str, datasets_filter: list = None, metric: str = "auc"):
     task_results_dir = CLASSIFICATION_RESULTS_DIR if task == "classification" else REGRESSION_RESULTS_DIR
     results_dir = Path(os.path.join(task_results_dir, date_folder))
 
@@ -84,13 +96,11 @@ def compute_permutation_tests(date_folder: str, task: str, datasets_filter: list
     for idx, row in best_df.iterrows():
         y_true = eval(row['y_true']) if isinstance(row['y_true'], str) else row['y_true']
         y_pred = eval(row[y_pred_column]) if isinstance(row[y_pred_column], str) else row[y_pred_column]
-        score, p_value = permutation_test_auc(y_true,
-                                              y_pred,
-                                              n_permutations=1000,
-                                              metric=metric
-                                              )
+        score, p_value = permutation_test(y_true, y_pred, n_permutations=1000, metric=metric)
 
-        print(f"Dataset: {row['dataset']}, Model: {row['model']}, {metric.upper()}: {score:.4f}, p-value: {p_value:.4f}")
+        print(
+            f"Dataset: {row['dataset']}, Model: {row['model']}, {metric.upper()}: {score:.4f}, p-value: {p_value:.4f}"
+        )
         print("---" * 100)
 
 
