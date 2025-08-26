@@ -20,10 +20,10 @@ def _select_metric(metric: str):
     raise ValueError("Unknown metric: {}".format(metric))
 
 
-def permutation_test_auc(y_true, y_pred_proba, n_permutations=1000, seed=42):
+def permutation_test_auc(y_true, y_pred_proba, n_permutations=1000, seed=42, metric='auc'):
     rng = np.random.RandomState(seed)
 
-    scoring_fn, higher_score_is_better = _select_metric("auc")
+    scoring_fn, higher_score_is_better = _select_metric(metric)
 
     true_auc = scoring_fn(y_true, y_pred_proba)
 
