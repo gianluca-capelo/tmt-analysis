@@ -38,7 +38,7 @@ def permutation_test(y_true, y_pred, n_permutations=1000, seed=42, metric='auc')
         if np.unique(y_true).size < 2:
             raise ValueError("Para AUC, y_true debe contener al menos dos clases (p. ej., 0 y 1).")
 
-    rng = np.random.default_rng(seed)
+    rng = np.random.RandomState(seed)
 
     scoring_fn, higher_score_is_better = _select_metric(metric)
 
