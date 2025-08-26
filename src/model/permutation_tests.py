@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -105,7 +106,7 @@ def compute_permutation_tests(results_dir: Path, task: str, datasets_filter: lis
         print(
             f"Dataset: {row['dataset']}, Model: {row['model']}, {metric.upper()}: {score:.4f}, p-value: {p_value:.4f}"
         )
-        print("---" * 100)
+        print("---" * 50)
 
     return pd.DataFrame(results)
 
@@ -117,7 +118,10 @@ def run_permutation_tests(task: str, date_folder: str):
 
     results_df = compute_permutation_tests(results_dir, metric="mae", task=task)
 
-    results_df.to_csv(results_dir / "permutation_test_results.csv", index=False)
+    results_path = results_dir / "permutation_test_results.csv"
+    results_df.to_csv(results_path, index=False)
+
+    print(f"Permutation test results for {task} saved to {results_path}")
 
 
 if __name__ == "__main__":
