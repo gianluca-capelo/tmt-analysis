@@ -71,7 +71,7 @@ def permutation_test(y_true, y_pred, n_permutations=1000, seed=42, metric='auc')
     return true_score, p_value
 
 
-def compute_permutation_tests(results_dir: str, task: str, datasets_filter: list = None, metric: str = "auc"):
+def compute_permutation_tests(results_dir: Path, task: str, datasets_filter: list = None, metric: str = "auc"):
     y_pred_column = 'y_pred_proba' if task == "classification" else 'y_pred'
 
     summary_paths = [f for f in results_dir.rglob("summary.csv")
@@ -111,7 +111,6 @@ def compute_permutation_tests(results_dir: str, task: str, datasets_filter: list
 
 
 def run_permutation_tests(task: str, date_folder: str):
-
     task_results_dir = CLASSIFICATION_RESULTS_DIR if task == "classification" else REGRESSION_RESULTS_DIR
 
     results_dir = Path(os.path.join(task_results_dir, date_folder))
