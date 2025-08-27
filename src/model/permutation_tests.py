@@ -103,10 +103,6 @@ def compute_permutation_tests(results_dir: Path, task: str, datasets_filter: lis
             "metric": metric,
             "p_value": p_value
         })
-        print(
-            f"Dataset: {row['dataset']}, Model: {row['model']}, {metric.upper()}: {score:.4f}, p-value: {p_value:.4f}"
-        )
-        print("---" * 50)
 
     return pd.DataFrame(results)
 
@@ -118,11 +114,21 @@ def run_permutation_tests(task: str, date_folder: str, metric:str):
 
     results_df = compute_permutation_tests(results_dir, metric=metric, task=task)
 
-    results_path = results_dir / "permutation_test_results.csv"
+    #create permutation test results directory if it doesn't exist
+    results_dir = results_dir / "permutation_test_results"
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    #create folder for the metric
+    results_dir = results_dir / metric
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    results_path = results_dir / f"permutation_test_results_{task}.csv"
     results_df.to_csv(results_path, index=False)
 
     print(f"Permutation test results for {task} saved to {results_path}")
 
 
 if __name__ == "__main__":
-    run_permutation_tests(task='regression', date_folder="2025-08-25_1821", metric = 'mae')
+    regression_metrics = ['r2', 'mse', 'mae']
+    for metric in regression_metrics:
+        run_permutation_tests(task='regression', date_folder="2025-08-25_1821", metric = metric)
