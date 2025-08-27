@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score, r2_score, mean_squared_error, mean_absolute_error
 
-from src.config import CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR
+from src.config import CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, REGRESSION_TARGETS
 
 
 def _select_metric(metric: str):
@@ -107,18 +107,18 @@ def compute_permutation_tests(results_dir: Path, task: str, datasets_filter: lis
     return pd.DataFrame(results)
 
 
-def run_permutation_tests(task: str, date_folder: str, metric:str):
+def run_permutation_tests(task: str, date_folder: str, metric: str, target_col: str):
     task_results_dir = CLASSIFICATION_RESULTS_DIR if task == "classification" else REGRESSION_RESULTS_DIR
 
-    results_dir = Path(os.path.join(task_results_dir, date_folder))
+    results_dir = Path(os.path.join(task_results_dir, date_folder, target_col))
 
     results_df = compute_permutation_tests(results_dir, metric=metric, task=task)
 
-    #create permutation test results directory if it doesn't exist
+    # create permutation test results directory if it doesn't exist
     results_dir = results_dir / "permutation_test_results"
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    #create folder for the metric
+    # create folder for the metric
     results_dir = results_dir / metric
     results_dir.mkdir(parents=True, exist_ok=True)
 
@@ -130,5 +130,7 @@ def run_permutation_tests(task: str, date_folder: str, metric:str):
 
 if __name__ == "__main__":
     regression_metrics = ['r2', 'mse', 'mae']
-    for metric in regression_metrics:
-        run_permutation_tests(task='regression', date_folder="2025-08-25_1821", metric = metric)
+    for target_col in REGRESSION_TARGETS:
+        for metric in regression_metrics:
+            run_permutation_tests(task='regression', date_folder="2025-08-25_1821", metric=metric,
+                                  target_col=target_col)
