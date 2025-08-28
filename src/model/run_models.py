@@ -46,7 +46,7 @@ def get_target_column(target_col, df):
 
 
 def split_features_and_target_for_classification(df):
-    target_col = CLASSIFICATION_TARGET_COLUMN_NAME
+    target_col = CLASSIFICATION_TARGET
 
     df_copy = df.copy()
 
@@ -78,7 +78,7 @@ def split_features_and_target_for_regression(df, target_col):
 
     df_copy = df_copy.drop(columns=['subject_id'])
 
-    df_copy = df_copy.drop(columns=[CLASSIFICATION_TARGET_COLUMN_NAME])
+    df_copy = df_copy.drop(columns=[CLASSIFICATION_TARGET])
 
     X = df_copy.values
 
@@ -89,8 +89,8 @@ def split_features_and_target_for_regression(df, target_col):
 
 def join_on_subject(df1: pd.DataFrame, df2: pd.DataFrame) -> pd.DataFrame:
     # Avoid duplicating group column if it exists in both DataFrames
-    if CLASSIFICATION_TARGET_COLUMN_NAME in df1.columns and CLASSIFICATION_TARGET_COLUMN_NAME in df2.columns:
-        df2 = df2.drop(columns=CLASSIFICATION_TARGET_COLUMN_NAME)
+    if CLASSIFICATION_TARGET in df1.columns and CLASSIFICATION_TARGET in df2.columns:
+        df2 = df2.drop(columns=CLASSIFICATION_TARGET)
 
     return pd.merge(df1, df2, on='subject_id', how='inner')
 
