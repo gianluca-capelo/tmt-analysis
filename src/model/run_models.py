@@ -2,7 +2,7 @@ import argparse
 import json
 import logging
 import os
-from collections import defaultdict
+from collections import defaultdict, Counter
 from datetime import datetime
 
 import numpy as np
@@ -26,12 +26,320 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, SVR
 from tqdm import tqdm
+import shap
+import matplotlib.pyplot as plt
+
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
     MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS
 from src.hand_analysis.loader.load_last_split import load_last_analysis
 
 CLASSIFICATION_TARGET_COLUMN_NAME = 'group'
+
+
+def shap_global_importance_final(
+    final_model: Pipeline, X: np.ndarray, feature_names: np.ndarray, is_classification: bool
+) -> dict:
+
+    # split pipeline
+    preproc = final_model[:-1] # GEJ: CHECK THIS ???? 
+    last_name = list(final_model.named_steps.keys())[-1]
+    estimator = final_model.named_steps[last_name]
+
+    # transform to model input space
+    Xt = preproc.transform(X)
+
+    # map to selected features (if selection was enabled)
+    if 'select' in final_model.named_steps and final_model.named_steps['select'] != 'passthrough':
+        support = final_model.named_steps['select'].get_support(indices=True)
+        selected_feature_names = feature_names[support]
+    else:
+        selected_feature_names = feature_names
+
+    # choose explainer
+    name = estimator.__class__.__name__.lower()
+
+    def background_sample(A, max_n=200, seed=0):
+        if A.shape[0] <= max_n:
+            return A
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(A.shape[0], size=max_n, replace=False)
+        return A[idx]
+
+    if 'randomforest' in name or 'xgb' in name:
+        explainer = shap.TreeExplainer(estimator)
+        sv = explainer.shap_values(Xt)
+        if is_classification and isinstance(sv, list):
+            sv_mat = sv[1]  # positive class
+        else:
+            sv_mat = sv
+    elif 'logisticregression' in name or 'ridge' in name or 'lasso' in name or 'linearregression' in name:
+        explainer = shap.LinearExplainer(estimator, Xt, feature_perturbation="interventional")
+        sv = explainer.shap_values(Xt)
+        if is_classification and isinstance(sv, list):
+            sv_mat = sv[1]
+        else:
+            sv_mat = sv if isinstance(sv, np.ndarray) else np.asarray(sv)
+    else:
+        # kernel fallback (SVC/SVR, etc.)
+        bg = background_sample(Xt, 200, seed=0)
+
+        def f_prob(Z):
+            if hasattr(estimator, "predict_proba"):
+                return estimator.predict_proba(Z)[:, 1]
+            if hasattr(estimator, "decision_function"):
+                z = estimator.decision_function(Z)
+                return 1 / (1 + np.exp(-z))
+            return estimator.predict(Z)
+
+        f = f_prob if is_classification else estimator.predict
+        explainer = shap.KernelExplainer(f, bg)
+        sv = explainer.shap_values(Xt, nsamples="auto")
+        if is_classification and isinstance(sv, list):
+            sv_mat = sv[1] if len(sv) > 1 else sv[0]
+        else:
+            sv_mat = sv if isinstance(sv, np.ndarray) else np.asarray(sv)
+
+    # global = mean |SHAP| across samples
+    sv_abs_mean = np.mean(np.abs(sv_mat), axis=0).ravel()
+    return dict(zip(selected_feature_names, sv_abs_mean))
+
+def compute_shap_explanation(final_model: Pipeline,
+                             X: np.ndarray,
+                             feature_names: np.ndarray,
+                             is_classification: bool):
+    """
+    Devuelve directamente un shap.Explanation, listo para usar con shap.plots.*.
+    """
+
+    # separar preprocesamiento y estimador
+    preproc = final_model[:-1]
+    last_name = list(final_model.named_steps.keys())[-1]
+    est = final_model.named_steps[last_name]
+
+    # transformar datos al espacio de entrada del modelo
+    Xt = preproc.transform(X)
+
+    # nombres de features tras selección (si aplica)
+    if 'select' in final_model.named_steps and final_model.named_steps['select'] != 'passthrough':
+        support = final_model.named_steps['select'].get_support(indices=True)
+        feat_names = np.array(feature_names)[support]
+    else:
+        feat_names = np.array(feature_names)
+
+    # elegir explainer según modelo
+    name = est.__class__.__name__.lower()
+    if 'randomforest' in name or 'xgb' in name:
+        explainer = shap.TreeExplainer(est, model_output='raw')
+        shap_values = explainer(Xt)
+    elif any(k in name for k in ['logisticregression', 'ridge', 'lasso', 'linearregression']):
+        explainer = shap.LinearExplainer(est, Xt, feature_perturbation="interventional")
+        shap_values = explainer(Xt)
+    else:
+        def f_prob(Z):
+            if hasattr(est, "predict_proba"):
+                return est.predict_proba(Z)[:, 1]
+            if hasattr(est, "decision_function"):
+                z = est.decision_function(Z)
+                return 1 / (1 + np.exp(-z))
+            return est.predict(Z)
+
+        f = f_prob if is_classification else est.predict
+        rng = np.random.default_rng(0)
+        bg = Xt[rng.choice(Xt.shape[0], size=min(200, Xt.shape[0]), replace=False)]
+        explainer = shap.KernelExplainer(f, bg)
+        shap_values = explainer(Xt, nsamples="auto")
+
+        # shap_values puede ser lista (clasificación) o array
+    if isinstance(shap_values, list):
+        # tomar la clase positiva si es binaria
+        shap_values = shap_values[1] if len(shap_values) > 1 else shap_values[0]
+
+    shap_values = np.asarray(shap_values)
+    if shap_values.ndim == 1:
+        shap_values = shap_values.reshape(-1, 1)
+
+    # asegurar shapes consistentes
+    if shap_values.shape[1] != len(feat_names):
+        raise ValueError(f"Mismatch: shap_values has {shap_values.shape[1]} cols, feat_names has {len(feat_names)}")
+
+    explanation = shap.Explanation(
+        values=shap_values,
+        data=Xt,
+        feature_names=list(feat_names)
+    )
+    return explanation
+
+
+
+
+# def compute_shap_values_final(final_model: Pipeline,
+#                               X: np.ndarray,
+#                               feature_names: np.ndarray,
+#                               is_classification: bool):
+#     """
+#     Devuelve:
+#       - Xt: matriz transformada por el preprocesamiento del pipeline (lo que ve el modelo)
+#       - shap_values: matriz (n_samples x n_features) o lista por clase
+#       - selected_feature_names: nombres de columnas tras SelectKBest (si aplica)
+#       - expected_value: valor esperado del modelo (para force/decision plots)
+#     """
+#     import shap
+#     preproc = final_model[:-1]
+#     last_name = list(final_model.named_steps.keys())[-1]
+#     est = final_model.named_steps[last_name]
+
+#     # transformar datos al espacio de entrada del modelo
+#     Xt = preproc.transform(X)
+
+#     # nombres de features (post selección)
+#     if 'select' in final_model.named_steps and final_model.named_steps['select'] != 'passthrough':
+#         support = final_model.named_steps['select'].get_support(indices=True)
+#         selected_feature_names = feature_names[support]
+#     else:
+#         selected_feature_names = feature_names
+
+#     name = est.__class__.__name__.lower()
+
+#     # elegir explainer
+#     if 'randomforest' in name or 'xgb' in name:
+#         explainer = shap.TreeExplainer(est, model_output='raw')  # para probas: usar 'probability' si querés
+#         shap_values = explainer.shap_values(Xt)
+#         expected_value = explainer.expected_value
+#         # clasificación binaria → quedate con clase positiva
+#         if is_classification and isinstance(shap_values, list):
+#             shap_values = shap_values[1]
+#             if isinstance(expected_value, list):
+#                 expected_value = expected_value[1]
+#     elif any(k in name for k in ['logisticregression', 'ridge', 'lasso', 'linearregression']):
+#         explainer = shap.LinearExplainer(est, Xt, feature_perturbation="interventional")
+#         shap_values = explainer.shap_values(Xt)
+#         expected_value = explainer.expected_value
+#         if is_classification and isinstance(shap_values, list):
+#             shap_values = shap_values[1]
+#             if isinstance(expected_value, list):
+#                 expected_value = expected_value[1]
+#         if not isinstance(shap_values, np.ndarray):
+#             shap_values = np.asarray(shap_values)
+#     else:
+#         # KernelExplainer (SVC/SVR/otros). Puede ser lento en muchos samples.
+#         def f_prob(Z):
+#             if hasattr(est, "predict_proba"):
+#                 return est.predict_proba(Z)[:, 1]
+#             if hasattr(est, "decision_function"):
+#                 z = est.decision_function(Z)
+#                 return 1 / (1 + np.exp(-z))
+#             return est.predict(Z)
+
+#         f = f_prob if is_classification else est.predict
+#         # Usá una muestra de fondo para performance
+#         rng = np.random.default_rng(0)
+#         bg_idx = rng.choice(Xt.shape[0], size=min(200, Xt.shape[0]), replace=False)
+#         bg = Xt[bg_idx]
+#         explainer = shap.KernelExplainer(f, bg)
+#         # Para no demorar, podés muestrear las filas para plot
+#         shap_values = explainer.shap_values(Xt, nsamples="auto")
+#         expected_value = explainer.expected_value
+#         if is_classification and isinstance(shap_values, list):
+#             shap_values = shap_values[1]
+#             if isinstance(expected_value, list):
+#                 expected_value = expected_value[1]
+#         if isinstance(shap_values, list):
+#             shap_values = np.asarray(shap_values)
+
+    
+
+#     return Xt, shap_values, np.array(selected_feature_names), expected_value, explainer
+
+
+
+def refit_final_model(
+    X, y, is_classification: bool, perform_pca: bool, feature_selection: bool,
+    inner_cv_seed: int, best_model_name: str, param_grids: dict, models: list,
+    preferred_params: dict | None = None  # <-- NUEVO
+):
+    # find the estimator instance for this name
+    est = None
+    for m in models:
+        if m.__class__.__name__ == best_model_name:
+            est = m
+            break
+    if est is None:
+        raise ValueError(f"Estimator {best_model_name} not found in models list.")
+
+    pipe = build_pipeline(est, is_classification, perform_pca, feature_selection)
+
+    if preferred_params and len(preferred_params) > 0:
+        # Usar directamente los hiperparámetros agregados de CV (sin GridSearch en full data)
+        prefix = 'classifier__' if is_classification else 'regressor__'
+        clean_params = {}
+        for k, v in preferred_params.items():
+            clean_params[k[len(prefix):] if k.startswith(prefix) else k] = v
+        est.set_params(**clean_params)
+        pipe = build_pipeline(est, is_classification, perform_pca, feature_selection)
+        pipe.fit(X, y)
+        return pipe, preferred_params, None
+
+
+
+    grid_params = param_grids.get(best_model_name, {})
+    scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error' # neg_mean_absolute_error, is used to transform it into a "score" where higher values are better.
+    inner_cv = (StratifiedKFold(n_splits=5, shuffle=True, random_state=inner_cv_seed)
+                if is_classification else
+                KFold(n_splits=5, shuffle=True, random_state=inner_cv_seed))
+
+    if grid_params:
+        grid = GridSearchCV(pipe, param_grid=grid_params, cv=inner_cv, scoring=scoring, n_jobs=-1, verbose=0)
+        grid.fit(X, y)
+        best_estimator = grid.best_estimator_
+        best_params = grid.best_params_
+        best_score = grid.best_score_
+    else:
+        pipe.fit(X, y)
+        best_estimator = pipe
+        best_params = {}
+        best_score = None
+
+    return best_estimator, best_params, best_score
+
+
+def choose_best_model_name(leave_one_out_metrics_df, is_classification: bool) -> str:
+    if is_classification:
+        # higher AUC is better
+        row = leave_one_out_metrics_df.loc[leave_one_out_metrics_df['auc'].idxmin()]
+    else:
+        # higher R^2 is better
+        row = leave_one_out_metrics_df.loc[leave_one_out_metrics_df['mae'].idxmax()]
+    return row['model']
+
+
+def aggregate_best_params(performance_df: pd.DataFrame, model_name: str) -> dict:
+    """Majority-vote aggregation of fold-level best_params for a given model."""
+    df = performance_df[performance_df['model'] == model_name]
+    params_list = [p for p in df['best_params'].tolist() if isinstance(p, dict) and len(p) > 0]
+    if not params_list:
+        return {}
+    # Convert dicts to tuples so they’re hashable
+    as_tuples = [tuple(sorted(d.items())) for d in params_list]
+    most_common_tuple, _ = Counter(as_tuples).most_common(1)[0]
+    return dict(most_common_tuple)
+
+
+def build_pipeline(estimator, is_classification, perform_pca: bool, feature_selection: bool,n_features: int | None=None):
+    select_score_func = f_classif if is_classification else f_regression
+    pca_step = ('pca', PCA(n_components=4)) if perform_pca else ('pca_noop', 'passthrough')
+
+    k = min(20, n_features) if (feature_selection and n_features is not None) else 20
+    select_step = (('select', SelectKBest(score_func=select_score_func, k=k))
+                   if feature_selection else ('select_noop', 'passthrough'))
+    step_name = 'classifier' if is_classification else 'regressor'
+    return Pipeline([
+        ('imputer', SimpleImputer(strategy='mean')),
+        select_step,
+        ('scaler', StandardScaler()),
+        pca_step,
+        (step_name, estimator)
+    ])
 
 
 def get_target_column(target_col, df):
@@ -185,9 +493,9 @@ def get_models(random_state: int, is_classification):
     if is_classification:
         return [
             RandomForestClassifier(random_state=random_state, n_jobs=-1),
-            SVC(random_state=random_state, probability=True, kernel='linear'),
-            LogisticRegression(max_iter=1000, random_state=random_state, solver='saga', n_jobs=-1),
-            xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
+            # SVC(random_state=random_state, probability=True, kernel='linear'),
+            # LogisticRegression(max_iter=1000, random_state=random_state, solver='saga', n_jobs=-1),
+            # xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
         ]
     else:
         return [
@@ -296,16 +604,12 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1, verbose=0)
             grid.fit(X_train, y_train)
             best_model = grid.best_estimator_
+            best_params_fold = grid.best_params_
+
         else:
             pipeline.fit(X_train, y_train)
-            best_model = pipeline
-
-        # Only compute importance if PCA is OFF
-        if not perform_pca and is_classification:  # TODO GIAN:
-            importance_dict = calculate_feature_importance_for_fold(X_train, best_model, feature_names,
-                                                                    feature_selection, model_name)
-        else:
-            importance_dict = {}
+            best_model = pipeline    
+            best_params_fold = {}
 
         y_pred_proba = best_model.predict_proba(X_test)[:, 1] if is_classification else None
         y_pred = best_model.predict(X_test)
@@ -316,8 +620,10 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             'y_test': y_test[0],
             'y_pred': y_pred[0],
             'y_pred_proba': y_pred_proba[0] if y_pred_proba is not None else None,
-            'feature_importances': importance_dict,
-            'feature_names': feature_names
+            # 'feature_importances': importance_dict,  # GEJ: We don't compute fold-level importances anymore; final-model SHAP will be used.
+            'feature_names': feature_names,
+            'best_params': best_params_fold,   
+
         })
 
     return fold_metrics
@@ -360,7 +666,7 @@ def calculate_metrics_leave_one_out_for_model_for_classification(df, model_name)
         'f1': [f1_score(y_true, y_pred, zero_division=0)],
         'y_true': [y_true],
         'y_pred_proba': [y_pred_proba],
-        'feature_importances': [calculate_feature_importance(model_df)]
+        # 'feature_importances': [calculate_feature_importance(model_df)]
     })
 
 
@@ -383,7 +689,7 @@ def calculate_metrics_leave_one_out_regression(performance_df, model_name):
         'mae': [mean_absolute_error(y_true, y_pred)],
         'y_true': [y_true],
         'y_pred': [y_pred],
-        'feature_importances': [calculate_feature_importance(df)]
+        # 'feature_importances': [calculate_feature_importance(df)]
     })
 
 
@@ -433,7 +739,8 @@ def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):
 
 
 def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters, is_classification, timestamp: str, feature_names):
+                 tune_hyperparameters, is_classification, timestamp: str, feature_names, final_model=None,
+                 final_model_params=None, final_model_shap=None):
     """
     Guarda los resultados y la configuración del experimento en un directorio por fecha y dataset.
 
@@ -446,6 +753,9 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
         tune_hyperparameters (bool): Si se usó GridSearchCV.
         is_classification (bool): Si es una tarea de clasificación.
         timestamp (str): Marca de tiempo para la carpeta (formato "%Y-%m-%d_%H%M").
+        final_model (Pipeline, optional): modelo refitteado en todos los datos.
+        final_model_params (dict, optional): hiperparámetros usados para el modelo final.
+        final_model_shap (dict, optional): importancias globales (mean |SHAP|).
     """
 
     base_dir = CLASSIFICATION_RESULTS_DIR if is_classification else REGRESSION_RESULTS_DIR
@@ -468,10 +778,16 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
         "timestamp": timestamp,
         "n_folds": len(performance_metrics_df),
         "feature_names": feature_names.tolist(),
+        "final_model_params": final_model_params or {}
     }
 
-    with open(os.path.join(dataset_dir, f"config.json"), 'w') as f:
+    with open(os.path.join(dataset_dir, "config.json"), 'w') as f:
         json.dump(config, f, indent=4)
+
+    # Guardar importancias SHAP globales si existen
+    if final_model_shap:
+        with open(os.path.join(dataset_dir, "final_model_shap.json"), "w") as f:
+            json.dump(final_model_shap, f, indent=2)
 
     logging.info(f"Resuls saves in: {dataset_dir}")
 
@@ -500,6 +816,9 @@ def main():
 
 def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
                    target_col, timestamp, tune_hyperparameters):
+    
+
+    # 1) Cross-validation para métricas de desempeño
     performance_metrics_df, feature_names = perform(
         perform_pca=perform_pca,
         dataset_name=dataset_name,
@@ -511,9 +830,41 @@ def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, 
         is_classification=is_classification
     )
     leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df, is_classification)
+
+    # 2) Preparar dataset completo para refit
+    X_full, y_full, feature_names_full = retrieve_dataset(dataset_name, target_col, is_classification)
+    param_grids = get_parameter_grid(is_classification)
+    models = get_models(global_seed, is_classification)
+
+    # 3) Seleccionar el mejor modelo según outer-CV
+    best_model_name = choose_best_model_name(leave_one_out_metrics_df, is_classification)
+
+    # 4) Agregar hiperparámetros de CV (sin retunear en full data → no leakage)
+    aggregated_params = aggregate_best_params(performance_metrics_df, best_model_name)
+    REUSE_CV_PARAMS = True  # evita retuning en todo el dataset
+
+    final_model, final_params, _ = refit_final_model(
+        X_full, y_full, is_classification, perform_pca, feature_selection,
+        inner_cv_seed, best_model_name, param_grids, models,
+        preferred_params=(aggregated_params if REUSE_CV_PARAMS else None)
+    )
+
+    # 5) Calcular SHAP global en el modelo final
+    final_shap = shap_global_importance_final(final_model, X_full, feature_names_full, is_classification)
+
+    explanation = compute_shap_explanation(final_model, X_full, feature_names_full, is_classification=True)
+    shap.plots.beeswarm(explanation, max_display=20) 
+
+    plt.tight_layout()
+    plt.savefig(f"{dataset_name}_shap_beeswarm.png", dpi=200)
+    plt.close()
+
+
+
+    # 6) Guardar todo (CV + final refit + SHAP)
     save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
                  tune_hyperparameters, is_classification=is_classification, timestamp=timestamp,
-                 feature_names=feature_names)
+                 feature_names=feature_names_full, final_model=final_model, final_model_params=final_params, final_model_shap=final_shap)   
 
 
 def parse_args():
