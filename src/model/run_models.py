@@ -28,10 +28,10 @@ from sklearn.svm import SVC, SVR
 from tqdm import tqdm
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
-    MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS
+    MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS, \
+    REGRESSION_TARGETS, CLASSIFICATION_TARGET
 from src.hand_analysis.loader.load_last_split import load_last_analysis
 
-CLASSIFICATION_TARGET_COLUMN_NAME = 'group'
 
 
 def get_target_column(target_col, df):
@@ -433,7 +433,7 @@ def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):
 
 
 def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters, is_classification, timestamp: str, feature_names):
+                 tune_hyperparameters, is_classification, timestamp: str, feature_names, target_column: str):
     """
     Guarda los resultados y la configuración del experimento en un directorio por fecha y dataset.
 
@@ -446,10 +446,12 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
         tune_hyperparameters (bool): Si se usó GridSearchCV.
         is_classification (bool): Si es una tarea de clasificación.
         timestamp (str): Marca de tiempo para la carpeta (formato "%Y-%m-%d_%H%M").
+        feature_names (list): Nombres de las características originales.
+        target_column (str): Nombre de la columna objetivo.
     """
 
     base_dir = CLASSIFICATION_RESULTS_DIR if is_classification else REGRESSION_RESULTS_DIR
-    dataset_dir = os.path.join(base_dir, timestamp, dataset_name)
+    dataset_dir = os.path.join(base_dir, timestamp, target_column, dataset_name)
     os.makedirs(dataset_dir, exist_ok=True)
 
     # Guardar métricas por fold
@@ -473,7 +475,7 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
     with open(os.path.join(dataset_dir, f"config.json"), 'w') as f:
         json.dump(config, f, indent=4)
 
-    logging.info(f"Resuls saves in: {dataset_dir}")
+    logging.info(f"Results saves in: {dataset_dir}")
 
 
 def main():
@@ -482,20 +484,22 @@ def main():
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     )
 
-    is_classification, target_col = parse_args()
+    is_classification, target_cols = parse_args()
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
-    for dataset_name in DATASETS:
-        logging.info(f"Processing dataset: {dataset_name}")
+    for target_col in target_cols:
+        logging.info(f"Running {target_col}...")
+        for dataset_name in DATASETS:
+            logging.info(f"Processing dataset: {dataset_name}")
 
-        run_experiment(dataset_name,
-                       PERFORM_FEATURE_SELECTION,
-                       MODEL_OUTER_SEED,
-                       MODEL_INNER_SEED,
-                       is_classification,
-                       PERFORM_PCA,
-                       target_col, timestamp,
-                       tune_hyperparameters=TUNE_HYPERPARAMETERS)
+            run_experiment(dataset_name,
+                           PERFORM_FEATURE_SELECTION,
+                           MODEL_OUTER_SEED,
+                           MODEL_INNER_SEED,
+                           is_classification,
+                           PERFORM_PCA,
+                           target_col, timestamp,
+                           tune_hyperparameters=TUNE_HYPERPARAMETERS)
 
 
 def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
@@ -513,7 +517,7 @@ def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, 
     leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df, is_classification)
     save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
                  tune_hyperparameters, is_classification=is_classification, timestamp=timestamp,
-                 feature_names=feature_names)
+                 feature_names=feature_names, target_column=target_col)
 
 
 def parse_args():
@@ -538,14 +542,15 @@ def parse_args():
 
     is_classification = args.task == "classification"
 
-    if not is_classification:
-        if args.target_col is None:
-            raise ValueError("For regression, target_col must be provided")
-        target_col = args.target_col
+    if is_classification:
+        target_cols = [CLASSIFICATION_TARGET]
     else:
-        target_col = CLASSIFICATION_TARGET_COLUMN_NAME
+        if args.target_col is None:
+            target_cols = REGRESSION_TARGETS
+        else:
+            target_cols = [args.target_col]
 
-    return is_classification, target_col
+    return is_classification, target_cols
 
 
 if __name__ == "__main__":

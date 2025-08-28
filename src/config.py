@@ -14,7 +14,7 @@ REGRESSION_RESULTS_DIR = os.path.join(RESULTS_DIR, "regression")
 
 HAND_ANALYSIS_FOLDER = os.path.join(DATA_DIR, "hand_analysis")
 
-ANALYSIS_PATH = os.path.join(DATA_DIR, "hand_analysis", "analysis.csv") 
+ANALYSIS_PATH = os.path.join(DATA_DIR, "hand_analysis", "analysis.csv")
 METADATA_CSV = os.path.join(DATA_DIR, "metadata", "metadata.csv")
 
 TRAIN_SET_PATH = os.path.join(DATA_DIR, "hand_analysis", "train_set.csv")
@@ -127,17 +127,27 @@ trial_id_map = {(
 # 55 and 71: additional subjects to exclude from analysis
 MANUAL_REJECTED_SUBJECTS = {25, 32, 33, 55, 56, 71, 75, 80, 96}
 
-
 DATASETS = [
-        'demographic',
-        'digital_test',
-        'demographic+digital',
-        'non_digital_tests',
-        'non_digital_tests+demo',
-    ]
+    'demographic',
+    'digital_test',
+    'demographic+digital',
+    'non_digital_tests',
+    'non_digital_tests+demo',
+]
 
 MODEL_OUTER_SEED = 42
 MODEL_INNER_SEED = 50
 PERFORM_PCA = False
 TUNE_HYPERPARAMETERS = False
 PERFORM_FEATURE_SELECTION = True
+REGRESSION_TARGETS = [
+    "mmse",
+    "tmt_a_raw",
+    "tmt_b_raw",
+    "digit_symbol_raw",
+    "forward_digit_span_raw",
+    "backward_digit_span_raw",
+    "clock_drawing_test"
+]
+
+CLASSIFICATION_TARGET = 'group'
