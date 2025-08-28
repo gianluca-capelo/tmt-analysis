@@ -7,15 +7,9 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import xgboost as xgb
 from sklearn.decomposition import PCA
-from sklearn.dummy import DummyRegressor
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.metrics import (
     roc_auc_score, accuracy_score, balanced_accuracy_score,
@@ -24,14 +18,13 @@ from sklearn.metrics import (
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC, SVR
 from tqdm import tqdm
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
     MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS, \
-    REGRESSION_TARGETS, CLASSIFICATION_TARGET
+    REGRESSION_TARGETS, CLASSIFICATION_TARGET, CLASSIFICATION_MODELS, REGRESSION_MODELS, CLASSIFICATION_PARAM_GRID, \
+    REGRESSION_PARAM_GRID
 from src.hand_analysis.loader.load_last_split import load_last_analysis
-
 
 
 def get_target_column(target_col, df):
@@ -134,71 +127,16 @@ def retrieve_dataset(dataset_name, target_col, is_classification):
 
 def get_parameter_grid(is_classification):
     if is_classification:
-        return {
-            "RandomForestClassifier": {
-                "classifier__n_estimators": [100, 500, 700, 1000],
-                "classifier__max_depth": [None, 10, 20, 30]
-            },
-            "SVC": {
-                "classifier__C": [0.1, 1, 10],
-                "classifier__kernel": ['linear', 'rbf']
-            },
-            "LogisticRegression": {
-                "classifier__C": [0.1, 1, 10],
-                "classifier__penalty": ['l2']
-            },
-            "XGBClassifier": {
-                "classifier__n_estimators": [100, 300],
-                "classifier__max_depth": [3, 5],
-                "classifier__learning_rate": [0.05, 0.1]
-            }
-        }
+        return CLASSIFICATION_PARAM_GRID
     else:
-        return {
-            "RandomForestRegressor": {
-                "regressor__n_estimators": [100, 500, 700, 1000],
-                "regressor__max_depth": [None, 10, 20, 30]
-            },
-            "SVR": {
-                "regressor__C": [0.1, 1, 10],
-                "regressor__kernel": ['linear', 'rbf'],
-                "regressor__epsilon": [0.01, 0.1, 0.2]
-            },
-            "LinearRegression": {
-                # LinearRegression has no hyperparameters to tune
-            },
-            "Ridge": {
-                "regressor__alpha": [0.1, 1.0, 10.0, 100.0]
-            },
-            "Lasso": {
-                "regressor__alpha": [0.01, 0.1, 1.0, 10.0]
-            },
-            "XGBRegressor": {
-                "regressor__n_estimators": [100, 300],
-                "regressor__max_depth": [3, 5],
-                "regressor__learning_rate": [0.05, 0.1]
-            }
-        }
+        return REGRESSION_PARAM_GRID
 
 
 def get_models(random_state: int, is_classification):
     if is_classification:
-        return [
-            RandomForestClassifier(random_state=random_state, n_jobs=-1),
-            SVC(random_state=random_state, probability=True, kernel='linear'),
-            LogisticRegression(max_iter=1000, random_state=random_state, solver='saga', n_jobs=-1),
-            xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
-        ]
+        return CLASSIFICATION_MODELS(random_state)
     else:
-        return [
-            RandomForestRegressor(random_state=random_state, n_jobs=-1),
-            SVR(),
-            LinearRegression(n_jobs=-1),
-            Ridge(random_state=random_state),
-            Lasso(random_state=random_state),
-            xgb.XGBRegressor(random_state=random_state, n_jobs=-1),
-            DummyRegressor()
-        ]
+        return REGRESSION_MODELS(random_state)
 
 
 def perform(perform_pca: bool, dataset_name: str, global_seed: int,

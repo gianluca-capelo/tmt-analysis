@@ -1,5 +1,13 @@
 import os
 
+import xgboost as xgb
+from sklearn.dummy import DummyRegressor
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC, SVR
+
 RANDOM_STATE = 78
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -151,3 +159,72 @@ REGRESSION_TARGETS = [
 ]
 
 CLASSIFICATION_TARGET = 'group'
+
+
+def CLASSIFICATION_MODELS(random_state):
+    return [
+        RandomForestClassifier(random_state=random_state, n_jobs=-1),
+        SVC(random_state=random_state, probability=True, kernel='linear'),
+        LogisticRegression(max_iter=1000, random_state=random_state, solver='saga', n_jobs=-1),
+        xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
+    ]
+
+
+CLASSIFICATION_PARAM_GRID = {
+    "RandomForestClassifier": {
+        "classifier__n_estimators": [100, 500, 700, 1000],
+        "classifier__max_depth": [None, 10, 20, 30]
+    },
+    "SVC": {
+        "classifier__C": [0.1, 1, 10],
+        "classifier__kernel": ['linear', 'rbf']
+    },
+    "LogisticRegression": {
+        "classifier__C": [0.1, 1, 10],
+        "classifier__penalty": ['l2']
+    },
+    "XGBClassifier": {
+        "classifier__n_estimators": [100, 300],
+        "classifier__max_depth": [3, 5],
+        "classifier__learning_rate": [0.05, 0.1]
+    }
+}
+
+
+def REGRESSION_MODELS(random_state):
+    return [
+        RandomForestRegressor(random_state=random_state, n_jobs=-1),
+        SVR(),
+        LinearRegression(n_jobs=-1),
+        Ridge(random_state=random_state),
+        Lasso(random_state=random_state),
+        xgb.XGBRegressor(random_state=random_state, n_jobs=-1),
+        DummyRegressor()
+    ]
+
+
+REGRESSION_PARAM_GRID = {
+    "RandomForestRegressor": {
+        "regressor__n_estimators": [100, 500, 700, 1000],
+        "regressor__max_depth": [None, 10, 20, 30]
+    },
+    "SVR": {
+        "regressor__C": [0.1, 1, 10],
+        "regressor__kernel": ['linear', 'rbf'],
+        "regressor__epsilon": [0.01, 0.1, 0.2]
+    },
+    "LinearRegression": {
+        # LinearRegression has no hyperparameters to tune
+    },
+    "Ridge": {
+        "regressor__alpha": [0.1, 1.0, 10.0, 100.0]
+    },
+    "Lasso": {
+        "regressor__alpha": [0.01, 0.1, 1.0, 10.0]
+    },
+    "XGBRegressor": {
+        "regressor__n_estimators": [100, 300],
+        "regressor__max_depth": [3, 5],
+        "regressor__learning_rate": [0.05, 0.1]
+    }
+}
