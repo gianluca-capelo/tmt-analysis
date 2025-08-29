@@ -18,7 +18,9 @@ from sklearn.metrics import (
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
 from tqdm import tqdm
+import shap
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
     MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS, \
@@ -26,6 +28,36 @@ from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGR
     REGRESSION_PARAM_GRID
 from src.hand_analysis.loader.load_last_split import load_last_analysis
 
+
+def save_shap_explanation(shap_values, feature_names, dataset_name, target_col, timestamp, is_classification):
+    """
+    Persist SHAP explanation so it can be reloaded and plotted later.
+    Saves:
+      - shap_explanation.npz: values, base_values, data, feature_names
+      - shap_mean_abs.csv: global importance summary (mean |SHAP|)
+    """
+    base_dir = CLASSIFICATION_RESULTS_DIR if is_classification else REGRESSION_RESULTS_DIR
+    dataset_dir = os.path.join(base_dir, timestamp, target_col, dataset_name)
+    os.makedirs(dataset_dir, exist_ok=True)
+
+    # Store as plain arrays (no pickle), so reloading is portable
+    np.savez_compressed(
+        os.path.join(dataset_dir, "shap_explanation.npz"),
+        values=shap_values.values,
+        base_values=shap_values.base_values,
+        data=shap_values.data,
+        feature_names=np.array(list(feature_names), dtype=str)
+    )
+
+    # Also store a quick global ranking
+    mean_abs = np.abs(shap_values.values).mean(axis=0)
+    pd.DataFrame(
+        {"feature": list(feature_names), "mean_abs_shap": mean_abs}
+    ).sort_values("mean_abs_shap", ascending=False).to_csv(
+        os.path.join(dataset_dir, "shap_mean_abs.csv"), index=False
+    )
+
+    return dataset_dir
 
 def get_target_column(target_col, df):
     last_analysis, _ = load_last_analysis()
@@ -230,7 +262,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
                 if is_classification
                 else KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
             )
-            scoring = 'roc_auc' if is_classification else 'r2'
+            scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error' # neg_mean_absolute_error is for MAE
             grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1, verbose=0)
             grid.fit(X_train, y_train)
             best_model = grid.best_estimator_
@@ -410,7 +442,7 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
         "feature_names": feature_names.tolist(),
     }
 
-    with open(os.path.join(dataset_dir, f"config.json"), 'w') as f:
+    with open(os.path.join(dataset_dir, "config.json"), 'w') as f:
         json.dump(config, f, indent=4)
 
     logging.info(f"Results saves in: {dataset_dir}")
@@ -453,9 +485,162 @@ def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, 
         is_classification=is_classification
     )
     leave_one_out_metrics_df = calculate_metrics_leave_one_out(performance_metrics_df, is_classification)
-    save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters, is_classification=is_classification, timestamp=timestamp,
-                 feature_names=feature_names, target_column=target_col)
+
+
+    # 2) Pick best model (by AUC for classification, by MAE for regression)
+    if is_classification:
+        metric_col = "auc"
+        best_row = leave_one_out_metrics_df.loc[leave_one_out_metrics_df[metric_col].idxmax()]
+    else:
+        metric_col = "mae"
+        best_row = leave_one_out_metrics_df.loc[leave_one_out_metrics_df[metric_col].idxmin()]
+
+    best_model_name = best_row["model"]
+    logging.info(f"[{dataset_name}] Best model by {metric_col}: {best_model_name} = {best_row[metric_col]:.4f}")
+
+    # 3) Refit final model on ALL data of the same dataset
+    X_full, y_full, feature_names_full = retrieve_dataset(dataset_name, target_col, is_classification)
+
+    # Build the pipeline with the selected estimator
+    if is_classification:
+        select_score_func = f_classif
+        pipeline_name = 'classifier'
+    else:
+        select_score_func = f_regression
+        pipeline_name = 'regressor'
+
+    max_pca_components = 4
+    max_selected_features = 20
+
+    pca_step = (
+        ('pca', PCA(n_components=min(max_pca_components, X_full.shape[1])))
+        if perform_pca else ('pca_noop', 'passthrough')
+    )
+    select_step = (
+        ('select', SelectKBest(score_func=select_score_func, k=min(max_selected_features, X_full.shape[1])))
+        if feature_selection else ('select_noop', 'passthrough')
+    )
+
+    # Get fresh instances of all candidate models and pick the best by name
+    candidate_models = get_models(global_seed, is_classification)
+    try:
+        final_estimator = next(m for m in candidate_models if m.__class__.__name__ == best_model_name)
+    except StopIteration:
+        raise ValueError(f"Could not find estimator named '{best_model_name}' in candidate models.")
+
+    final_pipeline = Pipeline([
+        ('imputer', SimpleImputer(strategy='mean')),
+        select_step,
+        ('scaler', StandardScaler()),
+        pca_step,
+        (pipeline_name, final_estimator)
+    ])
+
+    # (Optional) re-tune on full data to lock best hyperparams for deployment/reporting
+    if tune_hyperparameters:
+        param_grids = get_parameter_grid(is_classification)
+        param_grid = param_grids.get(best_model_name, {})
+        if param_grid:
+            inner_cv = (
+                StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+                if is_classification else
+                KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+            )
+            scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error' # neg_mean_absolute_error is for MAE
+            tuner = GridSearchCV(
+                final_pipeline,
+                param_grid=param_grid,
+                cv=inner_cv,
+                scoring=scoring,
+                n_jobs=-1,
+                verbose=0
+            )
+            tuner.fit(X_full, y_full)
+            best_model_fitted = tuner.best_estimator_
+            logging.info(f"[{dataset_name}] Best params for {best_model_name}: {tuner.best_params_}")
+        else:
+            # No grid provided for this model: just fit
+            best_model_fitted = final_pipeline.fit(X_full, y_full)
+    else:
+        best_model_fitted = final_pipeline.fit(X_full, y_full)
+
+    # 4) SHAP explanations (only when PCA is OFF to keep feature meaning)
+    shap_values = None
+    shap_feature_names = None
+    shap_warning = None
+
+    try:
+        if not perform_pca:
+            # Split pipeline into preprocess and estimator
+            preprocess = best_model_fitted[:-1]
+            estimator = best_model_fitted.named_steps[pipeline_name]
+
+            # Transform once
+            X_tx = preprocess.transform(X_full)
+
+            # Map names after SelectKBest
+            if feature_selection and 'select' in best_model_fitted.named_steps:
+                support_idx = best_model_fitted.named_steps['select'].get_support(indices=True)
+                shap_feature_names = np.asarray(feature_names_full)[support_idx]
+            else:
+                shap_feature_names = np.asarray(feature_names_full)
+
+            # Make a DataFrame so SHAP sees column names
+            X_tx_df = pd.DataFrame(X_tx, columns=shap_feature_names)
+
+            # Prefer TreeExplainer for tree models; fallback otherwise
+            try:
+                explainer = shap.TreeExplainer(estimator)
+                shap_values = explainer(X_tx_df)
+            except Exception:
+                explainer = shap.Explainer(estimator, X_tx_df)
+                shap_values = explainer(X_tx_df)
+
+            # For binary classification, keep the positive class contributions
+            if is_classification and getattr(shap_values.values, "ndim", 2) == 3 and shap_values.values.shape[1] == 2:
+                pos_idx = 1
+                base_vals = shap_values.base_values
+                base_vals = base_vals[:, pos_idx] if getattr(base_vals, "ndim", 1) == 2 else base_vals
+                shap_values = shap.Explanation(
+                    values=shap_values.values[:, pos_idx, :],
+                    base_values=base_vals,
+                    data=X_tx_df.values,
+                    feature_names=shap_feature_names.astype(str)
+                )
+            else:
+                # Ensure names are attached
+                shap_values = shap.Explanation(
+                    values=shap_values.values,
+                    base_values=shap_values.base_values,
+                    data=X_tx_df.values,
+                    feature_names=shap_feature_names.astype(str)
+                )
+        else:
+            shap_warning = "SHAP skipped because PCA is enabled (components are not directly interpretable)."
+            logging.info(shap_warning)
+    except Exception as e:
+        shap_warning = f"SHAP computation failed: {e}"
+        logging.warning(shap_warning)
+
+    # Plot
+    if shap_values is not None:
+        shap.plots.beeswarm(shap_values, max_display=20, show=False)
+        plt.tight_layout()
+        plt.savefig(f"{dataset_name}_{best_model_name}_SHAP.png", bbox_inches='tight')
+        
+    # 5) Persist standard outputs (folds + summary + config)
+    save_results(
+        leave_one_out_metrics_df,
+        dataset_name,
+        feature_selection,
+        perform_pca,
+        performance_metrics_df,
+        tune_hyperparameters,
+        is_classification=is_classification,
+        timestamp=timestamp,
+        feature_names=feature_names,   # original list
+        target_column=target_col
+    )
 
 
 def parse_args():
