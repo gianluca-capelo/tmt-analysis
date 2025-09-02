@@ -2,11 +2,12 @@ import argparse
 import json
 import logging
 import os
-from collections import defaultdict
 from datetime import datetime
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import shap
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 from sklearn.impute import SimpleImputer
@@ -18,9 +19,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
 from tqdm import tqdm
-import shap
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
     MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS, \
@@ -70,7 +69,6 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
                              dataset_name, target_col, perform_pca, global_seed,
                              tune_hyperparameters, feature_selection, inner_cv_seed,
                              dataset_dir, plot_type="bar", file_format="png"):
-
     # 1. Pick best model (by AUC for classification, by MAE for regression)
     if is_classification:
         metric_col = "auc"
@@ -128,7 +126,7 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
                 if is_classification else
                 KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
             )
-            scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error' # neg_mean_absolute_error is for MAE
+            scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'  # neg_mean_absolute_error is for MAE
             tuner = GridSearchCV(
                 final_pipeline,
                 param_grid=param_grid,
@@ -151,7 +149,6 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
     shap_values = None
     shap_feature_names = None
 
-    
     if not perform_pca:
         # Split pipeline into preprocess and estimator
         preprocess = best_model_fitted[:-1]
@@ -200,7 +197,6 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
             feature_names=shap_feature_names.astype(str)
         )
 
-
         # Guardar gráfico si hay SHAP
         if shap_values is not None:
             save_shap_plot(
@@ -211,6 +207,7 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
                 plot_type=plot_type,
                 file_format=file_format
             )
+
 
 def get_target_column(target_col, df):
     last_analysis, _ = load_last_analysis()
@@ -371,7 +368,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         select_score_func = f_regression
         pipeline_name = 'regressor'
 
-
     model_name = model.__class__.__name__
 
     fold_metrics = []
@@ -414,7 +410,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
                 if is_classification
                 else KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
             )
-            scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error' # neg_mean_absolute_error is for MAE
+            scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'  # neg_mean_absolute_error is for MAE
             grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1, verbose=0)
             grid.fit(X_train, y_train)
             best_model = grid.best_estimator_
@@ -436,6 +432,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         })
 
     return fold_metrics
+
 
 def calculate_metrics_leave_one_out_for_model_for_classification(df, model_name):
     model_df = df[df['model'] == model_name]
@@ -478,7 +475,6 @@ def calculate_metrics_leave_one_out_regression(performance_df, model_name):
     })
 
 
-
 def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):
     model_dfs = [
         calculate_metrics_leave_one_out_for_model(performance_metrics_df, model_name, is_classification)
@@ -491,7 +487,7 @@ def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):
 
 
 def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters,   is_classification, timestamp, feature_names, dataset_dir):
+                 tune_hyperparameters, is_classification, timestamp, feature_names, dataset_dir):
     """
     Guarda los resultados y la configuración del experimento en un directorio por fecha y dataset.
 
@@ -558,7 +554,6 @@ def main():
 
 def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
                    target_col, timestamp, tune_hyperparameters):
-    
     performance_metrics_df, feature_names = perform(
         perform_pca=perform_pca,
         dataset_name=dataset_name,
@@ -577,13 +572,13 @@ def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, 
 
     if PERFORM_SHAP:
         retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
-                                dataset_name, target_col, perform_pca, global_seed,
-                                tune_hyperparameters, feature_selection, inner_cv_seed, 
-                                dataset_dir, plot_type="bar", file_format="png")
-        
+                                 dataset_name, target_col, perform_pca, global_seed,
+                                 tune_hyperparameters, feature_selection, inner_cv_seed,
+                                 dataset_dir, plot_type="bar", file_format="png")
+
     # 5) Persist standard outputs (folds + summary + config)
     save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters,   is_classification, timestamp, feature_names, dataset_dir
+                 tune_hyperparameters, is_classification, timestamp, feature_names, dataset_dir
                  )
 
 

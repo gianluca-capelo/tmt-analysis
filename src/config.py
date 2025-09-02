@@ -146,7 +146,7 @@ DATASETS = [
 MODEL_OUTER_SEED = 42
 MODEL_INNER_SEED = 50
 PERFORM_PCA = False
-PERFORM_SHAP = True
+PERFORM_SHAP = False
 TUNE_HYPERPARAMETERS = True
 PERFORM_FEATURE_SELECTION = True
 MAX_PCA_COMPONENTS = 4
@@ -208,23 +208,23 @@ CLASSIFICATION_PARAM_GRID = {
 def REGRESSION_MODELS(random_state):
     return [
         RandomForestRegressor(random_state=random_state, n_jobs=-1),
-        SVR(),
-        LinearRegression(n_jobs=-1),
-        Ridge(random_state=random_state),
-        Lasso(random_state=random_state),
-        xgb.XGBRegressor(random_state=random_state, n_jobs=-1),
-        DummyRegressor()
+        # SVR(),
+        # LinearRegression(n_jobs=-1),
+        # Ridge(random_state=random_state),
+        # Lasso(random_state=random_state),
+        # xgb.XGBRegressor(random_state=random_state, n_jobs=-1),
+        # DummyRegressor()
     ]
 
 
 REGRESSION_PARAM_GRID = {
     "RandomForestRegressor": {
-        "clf__n_estimators": [200, 500, 1000],  # ❌ el default (100) no está
-        "clf__max_depth": [None, 5, 10, 20],  # ✅ default (None) incluido
-        "clf__min_samples_split": [2, 5, 10],  # ✅ default (2) incluido
-        "clf__min_samples_leaf": [1, 2, 4, 6],  # ✅ default (1) incluido
-        "clf__max_features": ["sqrt", "log2", 0.5, 0.7, 1.0],  # ✅ default (1.0) incluido
-        "clf__bootstrap": [True]  # ✅ default (True) incluido
+        "regressor__n_estimators": [100, 200, 500, 1000],
+        "regressor__max_depth": [None, 5, 10, 20],
+        "regressor__min_samples_split": [2, 5, 10],
+        "regressor__min_samples_leaf": [1, 2, 4, 6],
+        "regressor__max_features": ["sqrt", "log2", 0.5, 0.7, 1.0],
+        "regressor__bootstrap": [True]
     },
     "SVR": {
         "regressor__C": [0.1, 1, 10],
