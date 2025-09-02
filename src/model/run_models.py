@@ -43,7 +43,6 @@ def save_shap_plot(shap_values, dataset_dir, dataset_name, model_name,
         file_format (str): "png", "pdf", "svg", etc.
         max_display (int): features a mostrar.
     """
-    import matplotlib.pyplot as plt
     k = min(max_display, shap_values.values.shape[1])
 
     fig = plt.figure(figsize=(9, 0.48 * k + 1.4))
@@ -120,6 +119,7 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
 
     # (Optional) re-tune on full data to lock best hyperparams for deployment/reporting
     if tune_hyperparameters:
+        logging.info(f"[{dataset_name}] Retuning {best_model_name} on full data for final model selection...")
         param_grids = get_parameter_grid(is_classification)
         param_grid = param_grids.get(best_model_name, {})
         if param_grid:
@@ -140,6 +140,7 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
             tuner.fit(X_full, y_full)
             best_model_fitted = tuner.best_estimator_
             logging.info(f"[{dataset_name}] Best params for {best_model_name}: {tuner.best_params_}")
+
         else:
             # No grid provided for this model: just fit
             best_model_fitted = final_pipeline.fit(X_full, y_full)
@@ -421,13 +422,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             pipeline.fit(X_train, y_train)
             best_model = pipeline
 
-        # Only compute importance if PCA is OFF
-        if not perform_pca and is_classification:  # TODO GIAN:
-            importance_dict = calculate_feature_importance_for_fold(X_train, best_model, feature_names,
-                                                                    feature_selection, model_name)
-        else:
-            importance_dict = {}
-
         y_pred_proba = best_model.predict_proba(X_test)[:, 1] if is_classification else None
         y_pred = best_model.predict(X_test)
 
@@ -437,33 +431,11 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             'y_test': y_test[0],
             'y_pred': y_pred[0],
             'y_pred_proba': y_pred_proba[0] if y_pred_proba is not None else None,
-            'feature_importances': importance_dict,
-            'feature_names': feature_names
+            'feature_names': feature_names,
+            "hyperparameters": best_model.named_steps[pipeline_name].get_params()
         })
 
     return fold_metrics
-
-
-def calculate_feature_importance_for_fold(X_train, best_model, feature_names, feature_selection, model_name):
-    classifier = best_model.named_steps['classifier']
-    select = best_model.named_steps['select']
-    selected_features = select.get_support(indices=True) if feature_selection else np.arange(X_train.shape[1])
-    selected_feature_names = feature_names[selected_features]
-
-    if hasattr(classifier, 'feature_importances_'):  # RandomForest, XGBoost
-        importances = classifier.feature_importances_
-        return dict(zip(selected_feature_names, importances))
-
-    elif model_name == 'LogisticRegression':
-        importances = np.abs(classifier.coef_).flatten()
-        return dict(zip(selected_feature_names, importances))
-
-    elif model_name == 'SVC' and classifier.kernel == 'linear':
-        importances = np.abs(classifier.coef_).flatten()
-        return dict(zip(selected_feature_names, importances))
-
-    raise ValueError(f"Model {model_name} does not support feature importance extraction.")
-
 
 def calculate_metrics_leave_one_out_for_model_for_classification(df, model_name):
     model_df = df[df['model'] == model_name]
@@ -481,7 +453,6 @@ def calculate_metrics_leave_one_out_for_model_for_classification(df, model_name)
         'f1': [f1_score(y_true, y_pred, zero_division=0)],
         'y_true': [y_true],
         'y_pred_proba': [y_pred_proba],
-        'feature_importances': [calculate_feature_importance(model_df)]
     })
 
 
@@ -504,42 +475,8 @@ def calculate_metrics_leave_one_out_regression(performance_df, model_name):
         'mae': [mean_absolute_error(y_true, y_pred)],
         'y_true': [y_true],
         'y_pred': [y_pred],
-        'feature_importances': [calculate_feature_importance(df)]
     })
 
-
-def calculate_feature_importance(model_df):
-    """
-    Calculates the average importance of each feature across all folds.
-
-    Parameters
-    ----------
-    model_df : pd.DataFrame
-        Must contain a column 'feature_importances' with dicts of feature: importance.
-
-    Returns
-    -------
-    dict
-        A dictionary with features as keys and their average importance as values.
-    """
-
-    feature_importances = model_df['feature_importances'].dropna().tolist()
-
-    if not feature_importances:
-        logging.warning("No feature importance found for this model.")
-        return {}
-
-    sum_importance = defaultdict(float)
-
-    for feature_dict in feature_importances:
-        for feature, importance in feature_dict.items():
-            sum_importance[feature] += importance
-
-    num_folds = len(feature_importances)
-
-    avg_importance = {feature: total_importance / num_folds for feature, total_importance in sum_importance.items()}
-
-    return avg_importance
 
 
 def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):

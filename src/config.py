@@ -137,17 +137,17 @@ MANUAL_REJECTED_SUBJECTS = {25, 32, 33, 55, 56, 71, 75, 80, 96}
 
 DATASETS = [
     'demographic',
-    'digital_test',
-    'demographic+digital',
-    'non_digital_tests',
-    'non_digital_tests+demo',
+    # 'digital_test',
+    # 'demographic+digital',
+    # 'non_digital_tests',
+    # 'non_digital_tests+demo',
 ]
 
 MODEL_OUTER_SEED = 42
 MODEL_INNER_SEED = 50
 PERFORM_PCA = False
 PERFORM_SHAP = True 
-TUNE_HYPERPARAMETERS = False
+TUNE_HYPERPARAMETERS = True
 PERFORM_FEATURE_SELECTION = True
 MAX_PCA_COMPONENTS = 4
 MAX_SELECTED_FEATURES = 20
@@ -175,21 +175,32 @@ def CLASSIFICATION_MODELS(random_state):
 
 CLASSIFICATION_PARAM_GRID = {
     "RandomForestClassifier": {
-        "classifier__n_estimators": [100, 500, 700, 1000],
-        "classifier__max_depth": [None, 10, 20, 30]
+        # Default: n_estimators=100, max_depth=None
+        "classifier__n_estimators": [100, 300, 500, 1000],   # small → medium → large forests
+        "classifier__max_depth": [None, 5, 10, 20, 30],      # None = fully grown; also shallow options
+        "classifier__min_samples_split": [2, 5, 10],         # Default=2, controls overfitting
+        "classifier__max_features": ["sqrt", "log2", None]   # Default="sqrt" for classification
     },
     "SVC": {
-        "classifier__C": [0.1, 1, 10],
-        "classifier__kernel": ['linear', 'rbf']
+        # Defaults: C=1.0, kernel="rbf", gamma="scale"
+        "classifier__C": [0.1, 1, 10, 100],                  # Default=1, add broader range
+        "classifier__kernel": ["linear", "rbf"],             # Default="rbf"
+        "classifier__gamma": ["scale", "auto"]               # Default="scale"
     },
     "LogisticRegression": {
-        "classifier__C": [0.1, 1, 10],
-        "classifier__penalty": ['l2']
+        # Defaults: C=1.0, penalty="l2", solver="lbfgs"
+        "classifier__C": [0.01, 0.1, 1, 10, 100],            # Default=1, log-scale sweep
+        "classifier__penalty": ["l1", "l2", "elasticnet"],                       # Default="l2"
+        "classifier__l1_ratio": [0, 0.5, 1],          # Only used if penalty='elasticnet'
+        "classifier__solver": ["saga"]         # lbfgs (default, supports multinomial), liblinear for small datasets
     },
     "XGBClassifier": {
-        "classifier__n_estimators": [100, 300],
-        "classifier__max_depth": [3, 5],
-        "classifier__learning_rate": [0.05, 0.1]
+        # Defaults: n_estimators=100, max_depth=6, learning_rate=0.3, subsample=1, colsample_bytree=1
+        "classifier__n_estimators": [100, 300, 500, None],         # Default=100, add larger ensembles
+        "classifier__max_depth": [3, 5, 6, 8, None],               # Default=6, include shallower & deeper
+        "classifier__learning_rate": [0.01, 0.05, 0.1, 0.3, None], # Default=0.3, add smaller (slower learning) values
+        "classifier__subsample": [0.8, 1.0, None],                 # Default=1.0, subsampling for regularization
+        "classifier__colsample_bytree": [0.8, 1.0, None]           # Default=1.0, feature sampling
     }
 }
 
