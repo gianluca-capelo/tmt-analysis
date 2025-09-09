@@ -73,11 +73,11 @@ def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = N
     # Define groups, colors, and linestyles
     # ───────────────────────────────────────────────────────────────
     group_map = {
-        'non_digital_tests': 'non_digital',
-        'non_digital_tests+demo': 'non_digital',
-        'demographic': 'demographic',
-        'demographic+digital': 'digital',
-        'digital_test': 'digital'
+        'Non-digital': 'non_digital',
+        'Non-digital + Demographic': 'non_digital',
+        'Demographic': 'demographic',
+        'Demographic + Digital': 'digital',
+        'Digital': 'digital'
     }
 
     # Color-blind friendly palette
@@ -97,6 +97,17 @@ def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = N
     # Plot ROC curves
     # ───────────────────────────────────────────────────────────────
     plt.figure(figsize=(8, 7))
+
+    map_dataset_names = {
+        'demographic': 'Demographic',
+        'demographic+digital': 'Demographic + Digital',
+        'digital_test': 'Digital',
+        'non_digital_tests': 'Non-digital',
+        'non_digital_tests+demo': 'Non-digital + Demographic',
+    }
+
+    best_df['dataset'] = best_df['dataset'].map(map_dataset_names)
+    print(best_df['dataset'].unique())
 
     for idx, row in best_df.iterrows():
         y_true = eval(row['y_true']) if isinstance(row['y_true'], str) else row['y_true']
