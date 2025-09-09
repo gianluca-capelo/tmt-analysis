@@ -136,11 +136,11 @@ trial_id_map = {(
 MANUAL_REJECTED_SUBJECTS = {25, 32, 33, 55, 56, 71, 75, 80, 96}
 
 DATASETS = [
-    'demographic',
-    'digital_test',
+    # 'demographic',
+    # 'digital_test',
     'demographic+digital',
-    'non_digital_tests',
-    'non_digital_tests+demo',
+    # 'non_digital_tests',
+    # 'non_digital_tests+demo',
 ]
 
 MODEL_OUTER_SEED = 42
@@ -167,9 +167,9 @@ CLASSIFICATION_TARGET = 'group'
 def CLASSIFICATION_MODELS(random_state):
     return [
         RandomForestClassifier(random_state=random_state, n_jobs=-1),
-        SVC(random_state=random_state, probability=True, kernel='linear'),
-        LogisticRegression(max_iter=1000, random_state=random_state, solver='saga', n_jobs=-1),
-        xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
+        SVC(random_state=random_state, probability=True),
+        LogisticRegression(max_iter=1000, random_state=random_state, n_jobs=-1),
+        xgb.XGBClassifier(random_state=random_state, n_jobs=-1)
     ]
 
 
@@ -181,7 +181,10 @@ CLASSIFICATION_PARAM_GRID = {
         "classifier__max_features": ["sqrt", "log2"],
     },
     "SVC": [
-        {"classifier__kernel": ["linear"], "classifier__C": [0.1, 1, 10]},
+        {"classifier__kernel": ["linear"], 
+         "classifier__C": [0.1, 1, 10],
+         
+        },
         {
             "classifier__kernel": ["rbf"],
             "classifier__C": [0.1, 1, 10],

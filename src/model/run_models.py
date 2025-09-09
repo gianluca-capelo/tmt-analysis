@@ -69,9 +69,9 @@ def tune_global_params(X, y, models, param_grids, is_classification, inner_cv_se
         ])
 
         inner_cv = (
-            StratifiedKFold(n_splits=5, shuffle=True, random_state=inner_cv_seed)
+            LeaveOneOut()
             if is_classification
-            else KFold(n_splits=5, shuffle=True, random_state=inner_cv_seed)
+            else LeaveOneOut()
         )
         scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'
 
@@ -176,9 +176,9 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
      # Apply frozen params instead of re-tuning
     fixed_params = best_params_global.get(best_model_name, {})
     
+    clean_params = {}
     if fixed_params:
         # Remove "classifier__" or "regressor__" prefixes
-        clean_params = {}
         for k, v in fixed_params.items():
             if k.startswith(f"{pipeline_name}__"):
                 clean_params[k.split("__", 1)[1]] = v
@@ -511,10 +511,10 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y,
             (pipeline_name, model)
         ])
 
+        clean_params = {}
         # Apply frozen params
         if fixed_params:
             # Remove "classifier__" or "regressor__" prefixes
-            clean_params = {}
             for k, v in fixed_params.items():
                 if k.startswith(f"{pipeline_name}__"):
                     clean_params[k.split("__", 1)[1]] = v
