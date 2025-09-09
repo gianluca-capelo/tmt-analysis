@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
+from joblib import Parallel, delayed
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 from sklearn.impute import SimpleImputer
@@ -16,9 +17,10 @@ from sklearn.metrics import (
     roc_auc_score, accuracy_score, balanced_accuracy_score,
     precision_score, recall_score, f1_score
 )
-from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from threadpoolctl import threadpool_limits
 from tqdm import tqdm
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
@@ -411,7 +413,12 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
                 else KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
             )
             scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'  # neg_mean_absolute_error is for MAE
-            grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1, verbose=0)
+
+            #TODO GIAN: grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1, verbose=1)
+            grid = RandomizedSearchCV(pipeline, param_distributions=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1,
+                                      verbose=1,
+                                      n_iter=10)
+
             grid.fit(X_train, y_train)
             best_model = grid.best_estimator_
         else:
@@ -527,33 +534,36 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
 
     logging.info(f"Results saves in: {dataset_dir}")
 
-
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    )
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
     is_classification, target_cols = parse_args()
-
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
-    for target_col in target_cols:
-        logging.info(f"Running {target_col}...")
-        for dataset_name in DATASETS:
-            logging.info(f"Processing dataset: {dataset_name}")
 
-            run_experiment(dataset_name,
-                           PERFORM_FEATURE_SELECTION,
-                           MODEL_OUTER_SEED,
-                           MODEL_INNER_SEED,
-                           is_classification,
-                           PERFORM_PCA,
-                           target_col, timestamp,
-                           tune_hyperparameters=TUNE_HYPERPARAMETERS)
+    tasks = [(target_col, dataset_name) for target_col in target_cols for dataset_name in DATASETS]
 
+    # Use process-based parallelism. Choose a sensible number of jobs:
+    # If RandomizedSearchCV uses n_jobs=-1 (all cores), keep n_jobs=1 here OR
+    # cap BLAS threads to 1 as shown below to avoid oversubscription.
+    Parallel(n_jobs=min(os.cpu_count(), len(tasks)), backend="loky", batch_size="auto")(
+        delayed(run_experiment)(
+            dataset_name,
+            PERFORM_FEATURE_SELECTION,
+            MODEL_OUTER_SEED,
+            MODEL_INNER_SEED,
+            is_classification,
+            PERFORM_PCA,
+            target_col,
+            timestamp,
+            tune_hyperparameters=TUNE_HYPERPARAMETERS
+        ) for (target_col, dataset_name) in tasks
+    )
 
 def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
                    target_col, timestamp, tune_hyperparameters):
+    logging.info(f"Running {target_col}...")
+    logging.info(f"Processing dataset: {dataset_name}")
     performance_metrics_df, feature_names = perform(
         perform_pca=perform_pca,
         dataset_name=dataset_name,

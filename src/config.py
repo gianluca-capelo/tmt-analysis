@@ -137,10 +137,10 @@ MANUAL_REJECTED_SUBJECTS = {25, 32, 33, 55, 56, 71, 75, 80, 96}
 
 DATASETS = [
     'demographic',
-    # 'digital_test',
-    # 'demographic+digital',
-    # 'non_digital_tests',
-    # 'non_digital_tests+demo',
+    'digital_test',
+     'demographic+digital',
+    'non_digital_tests',
+    'non_digital_tests+demo',
 ]
 
 MODEL_OUTER_SEED = 42
@@ -208,12 +208,12 @@ CLASSIFICATION_PARAM_GRID = {
 def REGRESSION_MODELS(random_state):
     return [
         RandomForestRegressor(random_state=random_state, n_jobs=-1),
-        # SVR(),
-        # LinearRegression(n_jobs=-1),
-        # Ridge(random_state=random_state),
-        # Lasso(random_state=random_state),
-        # xgb.XGBRegressor(random_state=random_state, n_jobs=-1),
-        # DummyRegressor()
+        SVR(),
+        LinearRegression(n_jobs=-1),
+        Ridge(random_state=random_state),
+        Lasso(random_state=random_state),
+        xgb.XGBRegressor(random_state=random_state, n_jobs=-1),
+        DummyRegressor()
     ]
 
 
