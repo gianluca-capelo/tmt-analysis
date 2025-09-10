@@ -218,14 +218,14 @@ CLASSIFICATION_PARAM_GRID = {
 
 def REGRESSION_MODELS(random_state):
     return [
-        RandomForestRegressor(random_state=random_state, n_jobs=-1),
-        SVR(),
+        DummyRegressor(),
         LinearRegression(n_jobs=-1),
         Ridge(random_state=random_state),
         Lasso(random_state=random_state),
         xgb.XGBRegressor(random_state=random_state, n_jobs=-1),
         ElasticNet(random_state=random_state),
-        DummyRegressor(),
+        SVR(),
+        RandomForestRegressor(random_state=random_state, n_jobs=-1),
     ]
 
 
