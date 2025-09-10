@@ -17,7 +17,7 @@ from sklearn.metrics import (
     roc_auc_score, accuracy_score, balanced_accuracy_score,
     precision_score, recall_score, f1_score
 )
-from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut, RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
@@ -413,10 +413,8 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             )
             scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'  # neg_mean_absolute_error is for MAE
 
-            #TODO GIAN: grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1, verbose=1)
-            grid = RandomizedSearchCV(pipeline, param_distributions=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1,
-                                      verbose=1,
-                                      n_iter=1)
+            grid = GridSearchCV(pipeline, refit=True, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1,
+                                verbose=1)
 
             grid.fit(X_train, y_train)
             best_model = grid.best_estimator_
@@ -533,6 +531,7 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
 
     logging.info(f"Results saves in: {dataset_dir}")
 
+
 def main():
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -558,6 +557,7 @@ def main():
             tune_hyperparameters=TUNE_HYPERPARAMETERS
         ) for (target_col, dataset_name) in tasks
     )
+
 
 def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
                    target_col, timestamp, tune_hyperparameters):
