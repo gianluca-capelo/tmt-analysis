@@ -20,7 +20,6 @@ from sklearn.metrics import (
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut, RandomizedSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from threadpoolctl import threadpool_limits
 from tqdm import tqdm
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
