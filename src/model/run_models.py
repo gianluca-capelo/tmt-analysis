@@ -416,7 +416,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             #TODO GIAN: grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1, verbose=1)
             grid = RandomizedSearchCV(pipeline, param_distributions=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1,
                                       verbose=1,
-                                      n_iter=10)
+                                      n_iter=1)
 
             grid.fit(X_train, y_train)
             best_model = grid.best_estimator_
