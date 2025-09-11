@@ -2,11 +2,12 @@ import argparse
 import json
 import logging
 import os
-from collections import defaultdict
 from datetime import datetime
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import shap
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 from sklearn.impute import SimpleImputer
@@ -18,9 +19,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, KFold, LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
 from tqdm import tqdm
-import shap
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
     MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS, \
@@ -29,67 +28,11 @@ from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGR
 from src.hand_analysis.loader.load_last_split import load_last_analysis
 
 
-
-def tune_global_params(X, y, models, param_grids, is_classification, inner_cv_seed, perform_pca: bool, feature_selection: bool):
-    """Tune hyperparameters once using k-fold CV on the full dataset."""
-    best_params_per_model = {}
-    logging.info(f"[Global Tuning] Starting tuning for {len(models)} models "
-             f"({'classification' if is_classification else 'regression'})")
-
-    if is_classification:
-        select_score_func = f_classif
-        pipeline_name = 'classifier'
-    else:
-        select_score_func = f_regression
-        pipeline_name = 'regressor'
-
-    for model in models:
-        model_name = model.__class__.__name__
-        param_grid = param_grids.get(model_name, {})
-
-        if not param_grid:
-            continue  # no grid for this model
-
-        pca_step = (
-            ('pca', PCA(n_components=min(MAX_PCA_COMPONENTS, X.shape[1])))
-            if perform_pca else ('pca_noop', 'passthrough')
-        )
-
-        select_step = (
-            ('select', SelectKBest(score_func=select_score_func, k=min(MAX_SELECTED_FEATURES, X.shape[1])))
-            if feature_selection else ('select_noop', 'passthrough')
-        )
-
-        pipeline = Pipeline([
-            ('imputer', SimpleImputer(strategy='mean')),
-            select_step,
-            ('scaler', StandardScaler()),
-            pca_step,
-            (pipeline_name, model)
-        ])
-
-        inner_cv = (
-            LeaveOneOut()
-            if is_classification
-            else LeaveOneOut()
-        )
-        scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'
-
-        grid = GridSearchCV(pipeline, param_grid=param_grid, cv=inner_cv,
-                            scoring=scoring, n_jobs=-1, verbose=1)
-        grid.fit(X, y)
-
-        best_params_per_model[model_name] = grid.best_params_
-
-    return best_params_per_model
-
-
-
 def save_shap_plot(shap_values, dataset_dir, dataset_name, model_name,
                    plot_type="bar", file_format="png", max_display=20):
     """
     Guarda un gráfico de SHAP en el formato elegido.
-    
+
     Args:
         shap_values: shap.Explanation ya normalizado (2D).
         dataset_dir (str): carpeta destino.
@@ -124,9 +67,8 @@ def save_shap_plot(shap_values, dataset_dir, dataset_name, model_name,
 
 def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
                              dataset_name, target_col, perform_pca, global_seed,
-                             feature_selection, best_params_global, 
+                             tune_hyperparameters, feature_selection, inner_cv_seed,
                              dataset_dir, plot_type="bar", file_format="png"):
-
     # 1. Pick best model (by AUC for classification, by MAE for regression)
     if is_classification:
         metric_col = "auc"
@@ -173,30 +115,40 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
         (pipeline_name, final_estimator)
     ])
 
-     # Apply frozen params instead of re-tuning
-    fixed_params = best_params_global.get(best_model_name, {})
-    
-    clean_params = {}
-    if fixed_params:
-        # Remove "classifier__" or "regressor__" prefixes
-        for k, v in fixed_params.items():
-            if k.startswith(f"{pipeline_name}__"):
-                clean_params[k.split("__", 1)[1]] = v
-            else:
-                clean_params[k] = v
+    # (Optional) re-tune on full data to lock best hyperparams for deployment/reporting
+    if tune_hyperparameters:
+        logging.info(f"[{dataset_name}] Retuning {best_model_name} on full data for final model selection...")
+        param_grids = get_parameter_grid(is_classification)
+        param_grid = param_grids.get(best_model_name, {})
+        if param_grid:
+            inner_cv = (
+                StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+                if is_classification else
+                KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+            )
+            scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'  # neg_mean_absolute_error is for MAE
+            tuner = GridSearchCV(
+                final_pipeline,
+                param_grid=param_grid,
+                cv=inner_cv,
+                scoring=scoring,
+                n_jobs=-1,
+                verbose=0
+            )
+            tuner.fit(X_full, y_full)
+            best_model_fitted = tuner.best_estimator_
+            logging.info(f"[{dataset_name}] Best params for {best_model_name}: {tuner.best_params_}")
 
-    if clean_params:
-        final_pipeline.named_steps[pipeline_name].set_params(**clean_params)
-
-    # Fit once on all data
-    best_model_fitted = final_pipeline.fit(X_full, y_full)
-
+        else:
+            # No grid provided for this model: just fit
+            best_model_fitted = final_pipeline.fit(X_full, y_full)
+    else:
+        best_model_fitted = final_pipeline.fit(X_full, y_full)
 
     # 3. SHAP explanations (only when PCA is OFF to keep feature meaning)
     shap_values = None
     shap_feature_names = None
 
-    
     if not perform_pca:
         # Split pipeline into preprocess and estimator
         preprocess = best_model_fitted[:-1]
@@ -214,56 +166,14 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
 
         # Make a DataFrame so SHAP sees column names
         X_tx_df = pd.DataFrame(X_tx, columns=shap_feature_names)
-        # try:
-        #     # Works for tree/linear models (RF, XGB, Logistic, etc.)
-        #     explainer = shap.Explainer(estimator, X_tx_df)
-        #     shap_values = explainer(X_tx_df)
-        # except TypeError:
-        #     # e.g., SVC with RBF → use Kernel SHAP on a small background
-        #     f = estimator.decision_function if hasattr(estimator, "decision_function") else (lambda X: estimator.predict_proba(X)[:, 1])
-        #     bg = shap.sample(X_tx_df, min(50, len(X_tx_df)), random_state=global_seed)
-        #     explainer = shap.Explainer(f, bg)  # wraps KernelExplainer under the hood
-        #     shap_values = explainer(X_tx_df, nsamples=100)  # keep it tractable
-
-            # --- Choose the SHAP explainer based on model type ---
-        model_type = estimator.__class__.__name__.lower()
-        logging.info(f"[SHAP] Choosing explainer for {model_type}")
-
-        shap_values = None
-
-        if "forest" in model_type or "xgb" in model_type or "boost" in model_type:
-            # Tree-based models
-            explainer = shap.TreeExplainer(estimator)
-            shap_values = explainer(X_tx_df)
-        elif "logistic" in model_type or "linear" in model_type or "ridge" in model_type or "lasso" in model_type:
-            # Linear models
-            explainer = shap.LinearExplainer(estimator, X_tx_df)
-            shap_values = explainer(X_tx_df)
-        else:
-            # Fallback → kernel SHAP for nonlinear black-box models (e.g. SVC with RBF)
-            f = estimator.decision_function if hasattr(estimator, "decision_function") \
-                else (lambda X: estimator.predict_proba(X)[:, 1])
-            bg = shap.sample(X_tx_df, min(50, len(X_tx_df)), random_state=global_seed)
-            explainer = shap.KernelExplainer(f, bg)
-            shap_array = explainer.shap_values(X_tx_df, nsamples=100)
-
-            n_samples = X_tx_df.shape[0]
-            base_values = np.repeat(explainer.expected_value, n_samples)
-
-            shap_values = shap.Explanation(
-                values=shap_array,
-                base_values=base_values,
-                data=X_tx_df.values,
-                feature_names=shap_feature_names.astype(str)
-            )
-            logging.info(f"[SHAP] KernelExplainer used with {X_tx_df.shape[0]} samples.")
-
+        explainer = shap.Explainer(estimator, X_tx_df)
+        shap_values = explainer(X_tx_df)
 
         ## debug
         raw = explainer(X_tx_df)
         print("raw.values.shape =", raw.values.shape)
         print("raw.base_values.shape =", np.shape(raw.base_values))
-        ## debug 
+        ## debug
 
         if is_classification:
             vals = shap_values.values
@@ -287,7 +197,6 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
             feature_names=shap_feature_names.astype(str)
         )
 
-
         # Guardar gráfico si hay SHAP
         if shap_values is not None:
             save_shap_plot(
@@ -298,6 +207,7 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
                 plot_type=plot_type,
                 file_format=file_format
             )
+
 
 def get_target_column(target_col, df):
     last_analysis, _ = load_last_analysis()
@@ -413,7 +323,6 @@ def get_models(random_state: int, is_classification):
 
 def perform(perform_pca: bool, dataset_name: str, global_seed: int,
             inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool, target_col, is_classification):
-    
     X, y, feature_names = retrieve_dataset(dataset_name, target_col, is_classification)
 
     param_grids = get_parameter_grid(is_classification)
@@ -422,29 +331,15 @@ def perform(perform_pca: bool, dataset_name: str, global_seed: int,
 
     outer_cv = LeaveOneOut()
 
-    # global tuning
-    best_params_global = {}
-    if tune_hyperparameters:
-        best_params_global = tune_global_params(X, y, models, param_grids,
-                                                is_classification, inner_cv_seed,
-                                                perform_pca, feature_selection)
+    performance_metrics_df = perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca,
+                                                      feature_selection, tune_hyperparameters,
+                                                      inner_cv_seed, feature_names, is_classification)
 
-    # LOOCV with frozen params
-    performance_metrics_df = perform_cross_validation(param_grids, models, outer_cv,
-                                                    X, y, perform_pca,
-                                                    feature_selection,
-                                                    best_params_global,  # <– pass here
-                                                    feature_names, is_classification)
-
-    return performance_metrics_df, feature_names, best_params_global
+    return performance_metrics_df, feature_names
 
 
-def perform_cross_validation(param_grids, models, outer_cv, X, y,
-                             perform_pca: bool, feature_selection: bool,
-                             best_params_global,  # <- keep this
-                             feature_names, is_classification):
-    
-
+def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
+                             tune_hyperparameters: bool, inner_cv_seed: int, feature_names, is_classification):
     all_fold_metrics = []
 
     for model in models:
@@ -452,19 +347,19 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y,
 
         param_grid = param_grids.get(model_name, {})
 
-        fold_metrics = perform_cross_validation_for_model(param_grid, model, outer_cv, X, y,
-                                                  perform_pca, feature_selection,
-                                                  best_params_global,
-                                                  feature_names, is_classification)
+        fold_metrics = perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca,
+                                                          feature_selection,
+                                                          tune_hyperparameters,
+                                                          inner_cv_seed,
+                                                          feature_names, is_classification)
 
         all_fold_metrics.extend(fold_metrics)
 
     return pd.DataFrame(all_fold_metrics)
 
 
-def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y,
-                                       perform_pca: bool, feature_selection: bool,
-                                       best_params_global,
+def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
+                                       tune_hyperparameters: bool, inner_cv_seed: int,
                                        feature_names, is_classification):
     if is_classification:
         select_score_func = f_classif
@@ -473,9 +368,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y,
         select_score_func = f_regression
         pipeline_name = 'regressor'
 
-
     model_name = model.__class__.__name__
-    fixed_params = best_params_global.get(model_name, {})
 
     fold_metrics = []
 
@@ -511,21 +404,22 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y,
             (pipeline_name, model)
         ])
 
-        clean_params = {}
-        # Apply frozen params
-        if fixed_params:
-            # Remove "classifier__" or "regressor__" prefixes
-            for k, v in fixed_params.items():
-                if k.startswith(f"{pipeline_name}__"):
-                    clean_params[k.split("__", 1)[1]] = v
-                else:
-                    clean_params[k] = v
+        if tune_hyperparameters and param_grid:
+            inner_cv = (
+                StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+                if is_classification
+                else KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+            )
+            scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'  # neg_mean_absolute_error is for MAE
 
-        if clean_params:
-            pipeline.named_steps[pipeline_name].set_params(**clean_params)
+            grid = GridSearchCV(pipeline, refit=True, param_grid=param_grid, cv=inner_cv, scoring=scoring, n_jobs=-1,
+                                verbose=1)
 
-        pipeline.fit(X_train, y_train)
-        best_model = pipeline
+            grid.fit(X_train, y_train)
+            best_model = grid.best_estimator_
+        else:
+            pipeline.fit(X_train, y_train)
+            best_model = pipeline
 
         y_pred_proba = best_model.predict_proba(X_test)[:, 1] if is_classification else None
         y_pred = best_model.predict(X_test)
@@ -541,6 +435,7 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y,
         })
 
     return fold_metrics
+
 
 def calculate_metrics_leave_one_out_for_model_for_classification(df, model_name):
     model_df = df[df['model'] == model_name]
@@ -583,7 +478,6 @@ def calculate_metrics_leave_one_out_regression(performance_df, model_name):
     })
 
 
-
 def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):
     model_dfs = [
         calculate_metrics_leave_one_out_for_model(performance_metrics_df, model_name, is_classification)
@@ -596,7 +490,7 @@ def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):
 
 
 def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters,   is_classification, timestamp, feature_names, dataset_dir, best_params_global):
+                 tune_hyperparameters, is_classification, timestamp, feature_names, dataset_dir):
     """
     Guarda los resultados y la configuración del experimento en un directorio por fecha y dataset.
 
@@ -629,7 +523,6 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
         "timestamp": timestamp,
         "n_folds": len(performance_metrics_df),
         "feature_names": feature_names.tolist(),
-        "best_params_global": best_params_global
     }
 
     with open(os.path.join(dataset_dir, "config.json"), 'w') as f:
@@ -639,14 +532,12 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
 
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-    )
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
     is_classification, target_cols = parse_args()
-
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
+
     for target_col in target_cols:
         logging.info(f"Running {target_col}...")
         for dataset_name in DATASETS:
@@ -662,11 +553,11 @@ def main():
                            tune_hyperparameters=TUNE_HYPERPARAMETERS)
 
 
-def run_experiment(dataset_name, feature_selection, global_seed, 
-                   inner_cv_seed, is_classification, perform_pca,
+def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
                    target_col, timestamp, tune_hyperparameters):
-    
-    performance_metrics_df, feature_names, best_params_global = perform(
+    logging.info(f"Running {target_col}...")
+    logging.info(f"Processing dataset: {dataset_name}")
+    performance_metrics_df, feature_names = perform(
         perform_pca=perform_pca,
         dataset_name=dataset_name,
         global_seed=global_seed,
@@ -682,17 +573,16 @@ def run_experiment(dataset_name, feature_selection, global_seed,
     dataset_dir = os.path.join(base_dir, timestamp, target_col, dataset_name)
     os.makedirs(dataset_dir, exist_ok=True)
 
-    # Persist standard outputs (folds + summary + config)
-    save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
-                 tune_hyperparameters,   is_classification, timestamp, feature_names, dataset_dir, best_params_global
-                 )
-    
     if PERFORM_SHAP:
         retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
-                                dataset_name, target_col, perform_pca, global_seed,
-                                feature_selection, best_params_global,
-                                dataset_dir, plot_type="bar", file_format="png")
-        
+                                 dataset_name, target_col, perform_pca, global_seed,
+                                 tune_hyperparameters, feature_selection, inner_cv_seed,
+                                 dataset_dir, plot_type="bar", file_format="png")
+
+    # 5) Persist standard outputs (folds + summary + config)
+    save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
+                 tune_hyperparameters, is_classification, timestamp, feature_names, dataset_dir
+                 )
 
 
 def parse_args():

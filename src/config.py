@@ -4,7 +4,7 @@ import xgboost as xgb
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC, SVR
 
@@ -136,17 +136,17 @@ trial_id_map = {(
 MANUAL_REJECTED_SUBJECTS = {25, 32, 33, 55, 56, 71, 75, 80, 96}
 
 DATASETS = [
-    # 'demographic',
-    # 'digital_test',
+    'demographic',
+    'digital_test',
     'demographic+digital',
-    # 'non_digital_tests',
-    # 'non_digital_tests+demo',
+    'non_digital_tests',
+    'non_digital_tests+demo',
 ]
 
 MODEL_OUTER_SEED = 42
 MODEL_INNER_SEED = 50
 PERFORM_PCA = False
-PERFORM_SHAP = True 
+PERFORM_SHAP = False
 TUNE_HYPERPARAMETERS = True
 PERFORM_FEATURE_SELECTION = True
 MAX_PCA_COMPONENTS = 4
@@ -181,9 +181,9 @@ CLASSIFICATION_PARAM_GRID = {
         "classifier__max_features": ["sqrt", "log2"],
     },
     "SVC": [
-        {"classifier__kernel": ["linear"], 
-         "classifier__C": [0.1, 1, 10],
-         
+        {
+            "classifier__kernel": ["linear"],
+            "classifier__C": [0.1, 1, 10],
         },
         {
             "classifier__kernel": ["rbf"],
@@ -210,49 +210,74 @@ CLASSIFICATION_PARAM_GRID = {
         },
     ],
     "XGBClassifier": {
-        "classifier__n_estimators": [100, 200],     # default ~100
-        "classifier__max_depth": [3, 6],            # default 6
-        "classifier__learning_rate": [0.1, 0.3],    # default 0.3
-        "classifier__subsample": [0.8, 1.0],        # default 1.0
-        "classifier__colsample_bytree": [0.8, 1.0], # default 1.0
+        "classifier__n_estimators": [100, 200],  # default ~100
+        "classifier__max_depth": [3, 6],  # default 6
+        "classifier__learning_rate": [0.1, 0.3],  # default 0.3
+        "classifier__subsample": [0.8, 1.0],  # default 1.0
+        "classifier__colsample_bytree": [0.8, 1.0],  # default 1.0
     },
 }
 
 
 def REGRESSION_MODELS(random_state):
     return [
-        RandomForestRegressor(random_state=random_state, n_jobs=-1),
-        SVR(),
+        DummyRegressor(),
         LinearRegression(n_jobs=-1),
         Ridge(random_state=random_state),
         Lasso(random_state=random_state),
         xgb.XGBRegressor(random_state=random_state, n_jobs=-1),
-        DummyRegressor()
+        ElasticNet(random_state=random_state),
+        SVR(),
+        RandomForestRegressor(random_state=random_state, n_jobs=-1),
     ]
 
 
 REGRESSION_PARAM_GRID = {
     "RandomForestRegressor": {
-        "regressor__n_estimators": [100, 500, 700, 1000],
-        "regressor__max_depth": [None, 10, 20, 30]
+        "regressor__n_estimators": [100, 200, 500],
+        "regressor__max_depth": [None, 8, 16],
+        "regressor__min_samples_leaf": [2, 5, 10],
+        "regressor__max_features": ["sqrt", "log2"]
     },
-    "SVR": {
-        "regressor__C": [0.1, 1, 10],
-        "regressor__kernel": ['linear', 'rbf'],
-        "regressor__epsilon": [0.01, 0.1, 0.2]
-    },
+    "SVR": [
+        {
+            "regressor__kernel": ["linear"],
+            "regressor__C": [0.01, 0.1, 1, 10, 100, 1000],
+            "regressor__epsilon": [0.01, 0.1, 0.5, 1.0]
+
+        },
+        {
+            "regressor__kernel": ["rbf"],
+            "regressor__C": [0.01, 0.1, 1, 10, 100, 1000],
+            "regressor__epsilon": [0.01, 0.1, 0.5, 1.0],
+            "regressor__gamma": ["scale", "auto"],
+        },
+    ],
     "LinearRegression": {
         # LinearRegression has no hyperparameters to tune
     },
     "Ridge": {
-        "regressor__alpha": [0.1, 1.0, 10.0, 100.0]
+        "regressor__alpha": [0.0001, 0.001, 0.01, 0.1,
+                             1.0, 5, 10.0, 100.0, 1000.0, 10000.0]
     },
     "Lasso": {
-        "regressor__alpha": [0.01, 0.1, 1.0, 10.0]
+        "regressor__alpha": [0.0001, 0.001, 0.01, 0.1,
+                             1.0, 5, 10.0]
     },
     "XGBRegressor": {
-        "regressor__n_estimators": [100, 300],
-        "regressor__max_depth": [3, 5],
-        "regressor__learning_rate": [0.05, 0.1]
+        "regressor__n_estimators": [100, 200],
+        "regressor__max_depth": [3, 6],
+        "regressor__learning_rate": [0.1, 0.3],
+        "regressor__subsample": [0.8, 1.0],
+        "regressor__colsample_bytree": [0.8, 1.0],
+    },
+    "ElasticNet": {
+        "regressor__alpha": [
+            0.0001, 0.001, 0.01, 0.1,
+            1, 10, 100
+        ],
+        "regressor__l1_ratio": [
+            0.05, 0.2, 0.5, 0.8, 0.95
+        ]
     }
 }
