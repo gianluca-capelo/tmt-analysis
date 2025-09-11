@@ -231,9 +231,9 @@ def REGRESSION_MODELS(random_state):
 
 REGRESSION_PARAM_GRID = {
     "RandomForestRegressor": {
-        "regressor__n_estimators": [100, 200, 500, 1000],
-        "regressor__max_depth": [None, 5, 10, 20],
-        "regressor__min_samples_leaf": [1, 2, 4, 6],
+        "regressor__n_estimators": [100, 200, 500],
+        "regressor__max_depth": [None, 8, 16],
+        "regressor__min_samples_leaf": [2, 5, 10],
         "regressor__max_features": ["sqrt", "log2"]
     },
     "SVR": [
