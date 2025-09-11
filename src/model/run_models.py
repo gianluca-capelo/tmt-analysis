@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
-from joblib import Parallel, delayed
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 from sklearn.impute import SimpleImputer
@@ -539,24 +538,19 @@ def main():
     is_classification, target_cols = parse_args()
     timestamp = datetime.now().strftime("%Y-%m-%d_%H%M")
 
-    tasks = [(target_col, dataset_name) for target_col in target_cols for dataset_name in DATASETS]
+    for target_col in target_cols:
+        logging.info(f"Running {target_col}...")
+        for dataset_name in DATASETS:
+            logging.info(f"Processing dataset: {dataset_name}")
 
-    # Use process-based parallelism. Choose a sensible number of jobs:
-    # If RandomizedSearchCV uses n_jobs=-1 (all cores), keep n_jobs=1 here OR
-    # cap BLAS threads to 1 as shown below to avoid oversubscription.
-    Parallel(n_jobs=min(os.cpu_count(), len(tasks)), backend="loky", batch_size="auto")(
-        delayed(run_experiment)(
-            dataset_name,
-            PERFORM_FEATURE_SELECTION,
-            MODEL_OUTER_SEED,
-            MODEL_INNER_SEED,
-            is_classification,
-            PERFORM_PCA,
-            target_col,
-            timestamp,
-            tune_hyperparameters=TUNE_HYPERPARAMETERS
-        ) for (target_col, dataset_name) in tasks
-    )
+            run_experiment(dataset_name,
+                           PERFORM_FEATURE_SELECTION,
+                           MODEL_OUTER_SEED,
+                           MODEL_INNER_SEED,
+                           is_classification,
+                           PERFORM_PCA,
+                           target_col, timestamp,
+                           tune_hyperparameters=TUNE_HYPERPARAMETERS)
 
 
 def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
