@@ -50,7 +50,7 @@ CONSECUTIVE_POINTS = 5
 CUT_CRITERIA = "MINIMUM_TARGETS"
 CALCULATE_CROSSES = False
 DATASETS_PLOT = None
-DATASETS_PLOT_FOLDER = "2025-08-26_1551"
+DATASETS_PLOT_FOLDER = "2025-09-09_1600"
 
 # Subjects classification
 SUBJECT_GROUP = {**{i: "control" for i in
@@ -167,9 +167,9 @@ CLASSIFICATION_TARGET = 'group'
 def CLASSIFICATION_MODELS(random_state):
     return [
         RandomForestClassifier(random_state=random_state, n_jobs=-1),
-        SVC(random_state=random_state, probability=True, kernel='linear'),
-        LogisticRegression(max_iter=1000, random_state=random_state, solver='saga', n_jobs=-1),
-        xgb.XGBClassifier(random_state=random_state, tree_method="hist", eval_metric='logloss', n_jobs=-1)
+        SVC(random_state=random_state, probability=True),
+        LogisticRegression(max_iter=1000, random_state=random_state, n_jobs=-1),
+        xgb.XGBClassifier(random_state=random_state, n_jobs=-1)
     ]
 
 
@@ -182,13 +182,13 @@ CLASSIFICATION_PARAM_GRID = {
     },
     "SVC": [
         {
-            "classifier__kernel": ["linear"],  # ok
-            "classifier__C": [0.1, 1, 10],  # ok
+            "classifier__kernel": ["linear"],
+            "classifier__C": [0.1, 1, 10],
         },
         {
-            "classifier__kernel": ["rbf"],  # ok
-            "classifier__C": [0.1, 1, 10],  # ok
-            "classifier__gamma": ["scale", "auto"],  # ok
+            "classifier__kernel": ["rbf"],
+            "classifier__C": [0.1, 1, 10],
+            "classifier__gamma": ["scale", "auto"],
         },
     ],
     "LogisticRegression": [

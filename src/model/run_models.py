@@ -32,7 +32,7 @@ def save_shap_plot(shap_values, dataset_dir, dataset_name, model_name,
                    plot_type="bar", file_format="png", max_display=20):
     """
     Guarda un gráfico de SHAP en el formato elegido.
-    
+
     Args:
         shap_values: shap.Explanation ya normalizado (2D).
         dataset_dir (str): carpeta destino.
@@ -173,7 +173,7 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
         raw = explainer(X_tx_df)
         print("raw.values.shape =", raw.values.shape)
         print("raw.base_values.shape =", np.shape(raw.base_values))
-        ## debug 
+        ## debug
 
         if is_classification:
             vals = shap_values.values
