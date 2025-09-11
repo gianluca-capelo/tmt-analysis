@@ -177,15 +177,18 @@ CLASSIFICATION_PARAM_GRID = {
     "RandomForestClassifier": {
         "classifier__n_estimators": [100, 200, 500],
         "classifier__max_depth": [None, 8, 16],
-        "classifier__min_samples_leaf": [2, 5, 10],
+        "classifier__min_samples_leaf": [1, 2, 5, 10],
         "classifier__max_features": ["sqrt", "log2"],
     },
     "SVC": [
-        {"classifier__kernel": ["linear"], "classifier__C": [0.1, 1, 10]},
         {
-            "classifier__kernel": ["rbf"],
-            "classifier__C": [0.1, 1, 10],
-            "classifier__gamma": ["scale", "auto"],
+            "classifier__kernel": ["linear"],  # ok
+            "classifier__C": [0.1, 1, 10],  # ok
+        },
+        {
+            "classifier__kernel": ["rbf"],  # ok
+            "classifier__C": [0.1, 1, 10],  # ok
+            "classifier__gamma": ["scale", "auto"],  # ok
         },
     ],
     "LogisticRegression": [
