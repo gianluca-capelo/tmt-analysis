@@ -406,9 +406,9 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
 
         if tune_hyperparameters and param_grid:
             inner_cv = (
-                StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+                StratifiedKFold(n_splits=INNER_CV_SPLITS, shuffle=True, random_state=inner_cv_seed)
                 if is_classification
-                else KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+                else KFold(n_splits=INNER_CV_SPLITS, shuffle=True, random_state=inner_cv_seed)
             )
             scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'  # neg_mean_absolute_error is for MAE
 
