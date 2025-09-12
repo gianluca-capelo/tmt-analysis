@@ -24,7 +24,7 @@ from tqdm import tqdm
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
     MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS, \
     REGRESSION_TARGETS, CLASSIFICATION_TARGET, CLASSIFICATION_MODELS, REGRESSION_MODELS, CLASSIFICATION_PARAM_GRID, \
-    REGRESSION_PARAM_GRID, MAX_PCA_COMPONENTS, MAX_SELECTED_FEATURES, PERFORM_SHAP
+    REGRESSION_PARAM_GRID, MAX_PCA_COMPONENTS, MAX_SELECTED_FEATURES, PERFORM_SHAP, INNER_CV_SPLITS
 from src.hand_analysis.loader.load_last_split import load_last_analysis
 
 
@@ -122,9 +122,9 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
         param_grid = param_grids.get(best_model_name, {})
         if param_grid:
             inner_cv = (
-                StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+                StratifiedKFold(n_splits=INNER_CV_SPLITS, shuffle=True, random_state=inner_cv_seed)
                 if is_classification else
-                KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+                KFold(n_splits=INNER_CV_SPLITS, shuffle=True, random_state=inner_cv_seed)
             )
             scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'  # neg_mean_absolute_error is for MAE
             tuner = GridSearchCV(
@@ -406,9 +406,9 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
 
         if tune_hyperparameters and param_grid:
             inner_cv = (
-                StratifiedKFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+                StratifiedKFold(n_splits=INNER_CV_SPLITS, shuffle=True, random_state=inner_cv_seed)
                 if is_classification
-                else KFold(n_splits=3, shuffle=True, random_state=inner_cv_seed)
+                else KFold(n_splits=INNER_CV_SPLITS, shuffle=True, random_state=inner_cv_seed)
             )
             scoring = 'roc_auc' if is_classification else 'neg_mean_absolute_error'  # neg_mean_absolute_error is for MAE
 

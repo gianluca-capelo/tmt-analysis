@@ -4,9 +4,8 @@ import xgboost as xgb
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC, SVR
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, LogisticRegression
+from sklearn.svm import SVR, SVC
 
 RANDOM_STATE = 78
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -143,8 +142,9 @@ DATASETS = [
     'non_digital_tests+demo',
 ]
 
-MODEL_OUTER_SEED = 42
-MODEL_INNER_SEED = 50
+MODEL_OUTER_SEED = 47
+MODEL_INNER_SEED = 66
+INNER_CV_SPLITS=10
 PERFORM_PCA = False
 PERFORM_SHAP = False
 TUNE_HYPERPARAMETERS = True
