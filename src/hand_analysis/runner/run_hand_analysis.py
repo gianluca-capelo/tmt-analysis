@@ -51,6 +51,3 @@ def run_analysis_with_configuration_parameters(output_path):
 
     return analysis
 
-
-if __name__ == "__main__":
-    run_analysis_with_configuration_parameters()
