@@ -17,7 +17,7 @@ PROCESSED_FOR_MODEL_DIR = os.path.join(DATA_DIR, "processed")
 RESULTS_DIR = os.path.join(BASE_DIR, "results")
 
 CLASSIFICATION_RESULTS_DIR = os.path.join(RESULTS_DIR, "classification")
-REGRESSION_RESULTS_DIR = os.path.join(RESULTS_DIR, "regression")
+ = os.path.join(RESULTS_DIR, "regression")
 
 HAND_ANALYSIS_FOLDER = os.path.join(DATA_DIR, "hand_analysis")
 
