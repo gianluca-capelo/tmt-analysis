@@ -130,8 +130,8 @@ def run_permutation_tests(task: str, date_folder: str, metric: str, target_col: 
 
 
 if __name__ == "__main__":
-    regression_metrics = ['r2', 'mse', 'mae']
+    regression_metrics = ['mae'] #, 'mse', 'r2']
     for target_col in REGRESSION_TARGETS:
         for metric in regression_metrics:
-            run_permutation_tests(task='regression', date_folder="2025-08-27_1658", metric=metric,
+            run_permutation_tests(task='regression', date_folder="2025-09-13_1725", metric=metric,
                                   target_col=target_col)
