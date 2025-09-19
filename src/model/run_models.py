@@ -151,8 +151,8 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
 
     if not perform_pca:
         # Split pipeline into preprocess and estimator
-        preprocess = best_model_fitted[:-1]
-        estimator = best_model_fitted.named_steps[pipeline_name]
+        preprocess = pipe[:-1]
+        estimator = pipe.named_steps[pipeline_name]
 
         # Transform once
         X_tx = preprocess.transform(X_full)
