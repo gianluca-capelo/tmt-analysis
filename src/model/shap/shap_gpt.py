@@ -13,14 +13,15 @@ from src.config import MAX_SELECTED_FEATURES
 from src.model.run_models import retrieve_dataset, get_models
 
 
-def _fresh_estimator(models, model_name):
+def _fresh_estimator(model_name, global_seed, is_classification):
+    models = get_models(random_state=global_seed, is_classification=is_classification)
     for m in models:
         if m.__class__.__name__ == model_name:
             return m.__class__(**m.get_params())
     raise ValueError(f"Estimator '{model_name}' not found in model zoo.")
 
 
-def _build_pipeline_no_pca(model, is_classification, feature_selection, X_train_shape, select_score_func):
+def _build_pipeline(model, is_classification, feature_selection, X_train_shape, select_score_func):
     step_name = 'classifier' if is_classification else 'regressor'
     select_step = (
         ('select', SelectKBest(score_func=select_score_func, k=min(MAX_SELECTED_FEATURES, X_train_shape[1])))
@@ -71,22 +72,12 @@ def shap_after_nested_cv(
     """
     X, y, feature_names = retrieve_dataset(dataset_name, target_col, is_classification)
     feature_names = np.array(feature_names)
-    models = get_models(global_seed, is_classification)
 
-    folds_df = pd.read_csv(folds_csv_path)
-    folds_df = folds_df[folds_df['model'] == model_name_to_explain].copy()
-    if folds_df.empty:
-        raise ValueError(f"No rows for model '{model_name_to_explain}' in {folds_csv_path}")
-
-    # Parse hyperparameters (stringified dict → dict)
-    if folds_df['hyperparameters'].dtype == object:
-        folds_df['hyperparameters'] = folds_df['hyperparameters'].apply(
-            lambda s: parse_hparams(s)
-        )
-    folds_df = folds_df.sort_values('fold').reset_index(drop=True)
+    folds_df = load_folds_info(folds_csv_path, model_name_to_explain)
 
     loo = LeaveOneOut()
     fold_splits = list(loo.split(X, y))
+
     if len(fold_splits) != len(folds_df):
         raise RuntimeError("Current LOO fold count and folds.csv rows differ. "
                            "Persist and reuse train/test indices to guarantee identity.")
@@ -102,10 +93,9 @@ def shap_after_nested_cv(
         X_train, X_test = X[train_idx], X[test_idx]
         y_train = y[train_idx]
 
-        est = _fresh_estimator(models, model_name_to_explain)
-        pipe, step_name = _build_pipeline_no_pca(
-            est, is_classification, feature_selection, X_train.shape, select_score_func
-        )
+        estimator = _fresh_estimator(model_name_to_explain, global_seed, is_classification)
+        pipe, step_name = _build_pipeline(estimator, is_classification, feature_selection, X_train.shape,
+                                          select_score_func)
         # Apply per-fold estimator params
         final_est = pipe.named_steps[step_name]
         final_est.set_params(**fold_row.hyperparameters)
@@ -144,9 +134,22 @@ def shap_after_nested_cv(
     return shap_values_df, mean_abs_shap
 
 
-if __name__ == "__main__":
-    from src.config import MODEL_OUTER_SEED
+def load_folds_info(folds_csv_path, model_name_to_explain):
+    folds_df = pd.read_csv(folds_csv_path)
+    folds_df = folds_df[folds_df['model'] == model_name_to_explain].copy()
+    if folds_df.empty:
+        raise ValueError(f"No rows for model '{model_name_to_explain}' in {folds_csv_path}")
+    # Parse hyperparameters (stringified dict → dict)
+    if folds_df['hyperparameters'].dtype == object:
+        folds_df['hyperparameters'] = folds_df['hyperparameters'].apply(
+            lambda s: parse_hparams(s)
+        )
+    folds_df = folds_df.sort_values('fold').reset_index(drop=True)
+    return folds_df
 
+
+def run_shap():
+    from src.config import MODEL_OUTER_SEED
     shap_values_df, mean_abs_shap = shap_after_nested_cv(
         dataset_name="demographic+digital",
         target_col="group",
@@ -156,3 +159,9 @@ if __name__ == "__main__":
         model_name_to_explain="SVC",
         folds_csv_path="/home/gianluca/Research/tmt-analysis/results/classification/2025-09-12_1559/group/demographic+digital/folds.csv",
     )
+
+    print(mean_abs_shap)
+
+
+if __name__ == "__main__":
+    run_shap()
