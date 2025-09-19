@@ -43,7 +43,7 @@ def _callable_for_shap(fitted_pipeline, is_classification):
         if hasattr(fitted_pipeline, "predict_proba"):
             return lambda X: fitted_pipeline.predict_proba(X)[:, 1]
         else:
-            raise ValueError("")
+            raise ValueError("At the moment, only classifiers with predict_proba are supported for SHAP.")
     else:
         return lambda X: fitted_pipeline.predict(X)
 
