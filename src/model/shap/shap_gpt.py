@@ -1,4 +1,5 @@
 import ast
+import os
 
 import numpy as np
 import pandas as pd
@@ -9,7 +10,7 @@ from sklearn.model_selection import LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from src.config import MAX_SELECTED_FEATURES
+from src.config import MAX_SELECTED_FEATURES, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR
 from src.model.run_models import retrieve_dataset, get_models
 
 
@@ -148,20 +149,46 @@ def load_folds_info(folds_csv_path, model_name_to_explain):
     return folds_df
 
 
-def run_shap():
-    from src.config import MODEL_OUTER_SEED
+from src.config import MODEL_OUTER_SEED
+
+
+def run_shap(task: str, target_col: str, dataset_name: str, timestamp: str, model_name_to_explain: str):
+    if task != 'classification' and task != 'regression':
+        raise ValueError("task must be 'classification' or 'regression'")
+
+    is_classification = task == 'classification'
+
+    if is_classification and target_col != 'group':
+        raise ValueError("For classification, target_col must be 'group'")
+
+    results_dir = CLASSIFICATION_RESULTS_DIR if is_classification else REGRESSION_RESULTS_DIR
+
+    folds_path = os.path.join(
+        results_dir,
+        timestamp,
+        target_col,
+        dataset_name,
+        "folds.csv"
+    )
+
     shap_values_df, mean_abs_shap = shap_after_nested_cv(
-        dataset_name="demographic+digital",
-        target_col="group",
-        is_classification=True,
+        dataset_name=dataset_name,
+        target_col=target_col,
+        is_classification=is_classification,
         feature_selection=True,
         global_seed=MODEL_OUTER_SEED,
-        model_name_to_explain="SVC",
-        folds_csv_path="/home/gianluca/Research/tmt-analysis/results/classification/2025-09-12_1559/group/demographic+digital/folds.csv",
+        model_name_to_explain=model_name_to_explain,
+        folds_csv_path=folds_path,
     )
 
     print(mean_abs_shap)
 
 
 if __name__ == "__main__":
-    run_shap()
+    run_shap(
+        dataset_name="demographic+digital",
+        target_col="group",
+        task="classification",
+        model_name_to_explain="SVC",
+        timestamp="2025-09-12_1559"
+    )
