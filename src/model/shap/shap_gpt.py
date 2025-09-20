@@ -66,7 +66,7 @@ def shap_after_nested_cv(
         folds_csv_path: str
 ):
     """
-    Refit per outer LOO fold with stored hyperparameters (no PCA),
+    Refit per outer LOO fold with stored hyperparameters,
     compute SHAP for that fold's test sample(s), and return:
       shap_values_df: DataFrame [samples x features]
       mean_abs_shap: Series (mean |SHAP| per feature)

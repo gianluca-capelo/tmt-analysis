@@ -91,10 +91,6 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
         select_score_func = f_regression
         pipeline_name = 'regressor'
 
-    pca_step = (
-        ('pca', PCA(n_components=min(MAX_PCA_COMPONENTS, X_full.shape[1])))
-        if perform_pca else ('pca_noop', 'passthrough')
-    )
     select_step = (
         ('select', SelectKBest(score_func=select_score_func, k=min(MAX_SELECTED_FEATURES, X_full.shape[1])))
         if feature_selection else ('select_noop', 'passthrough')
@@ -111,7 +107,6 @@ def retrain_and_perform_shap(leave_one_out_metrics_df, is_classification,
         ('imputer', SimpleImputer(strategy='mean')),
         select_step,
         ('scaler', StandardScaler()),
-        pca_step,
         (pipeline_name, final_estimator)
     ])
 
