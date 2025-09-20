@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
-from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
@@ -22,9 +21,9 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 from src.config import PROCESSED_FOR_MODEL_DIR, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR, DATASETS, \
-    MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_PCA, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS, \
+    MODEL_INNER_SEED, MODEL_OUTER_SEED, PERFORM_FEATURE_SELECTION, TUNE_HYPERPARAMETERS, \
     REGRESSION_TARGETS, CLASSIFICATION_TARGET, CLASSIFICATION_MODELS, REGRESSION_MODELS, CLASSIFICATION_PARAM_GRID, \
-    REGRESSION_PARAM_GRID, MAX_PCA_COMPONENTS, MAX_SELECTED_FEATURES, PERFORM_SHAP, INNER_CV_SPLITS
+    REGRESSION_PARAM_GRID, MAX_SELECTED_FEATURES, INNER_CV_SPLITS
 from src.hand_analysis.loader.load_last_split import load_last_analysis
 
 
@@ -176,7 +175,7 @@ def get_models(random_state: int, is_classification):
         return REGRESSION_MODELS(random_state)
 
 
-def perform(perform_pca: bool, dataset_name: str, global_seed: int,
+def perform(dataset_name: str, global_seed: int,
             inner_cv_seed: int, feature_selection: bool, tune_hyperparameters: bool, target_col, is_classification):
     X, y, feature_names = retrieve_dataset(dataset_name, target_col, is_classification)
 
@@ -186,14 +185,13 @@ def perform(perform_pca: bool, dataset_name: str, global_seed: int,
 
     outer_cv = LeaveOneOut()
 
-    performance_metrics_df = perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca,
-                                                      feature_selection, tune_hyperparameters,
+    performance_metrics_df = perform_cross_validation(param_grids, models, outer_cv, X, y, feature_selection, tune_hyperparameters,
                                                       inner_cv_seed, feature_names, is_classification)
 
     return performance_metrics_df, feature_names
 
 
-def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
+def perform_cross_validation(param_grids, models, outer_cv, X, y, feature_selection: bool,
                              tune_hyperparameters: bool, inner_cv_seed: int, feature_names, is_classification):
     all_fold_metrics = []
 
@@ -202,7 +200,7 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: b
 
         param_grid = param_grids.get(model_name, {})
 
-        fold_metrics = perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca,
+        fold_metrics = perform_cross_validation_for_model(param_grid, model, outer_cv, X, y,
                                                           feature_selection,
                                                           tune_hyperparameters,
                                                           inner_cv_seed,
@@ -213,7 +211,7 @@ def perform_cross_validation(param_grids, models, outer_cv, X, y, perform_pca: b
     return pd.DataFrame(all_fold_metrics)
 
 
-def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perform_pca: bool, feature_selection: bool,
+def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, feature_selection: bool,
                                        tune_hyperparameters: bool, inner_cv_seed: int,
                                        feature_names, is_classification):
     if is_classification:
@@ -241,11 +239,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        pca_step = (
-            ('pca', PCA(n_components=min(MAX_PCA_COMPONENTS, X_train.shape[1])))
-            if perform_pca else ('pca_noop', 'passthrough')
-        )
-
         select_step = (
             ('select', SelectKBest(score_func=select_score_func, k=min(MAX_SELECTED_FEATURES, X_train.shape[1])))
             if feature_selection else ('select_noop', 'passthrough')
@@ -255,7 +248,6 @@ def perform_cross_validation_for_model(param_grid, model, outer_cv, X, y, perfor
             ('imputer', SimpleImputer(strategy='mean')),
             select_step,
             ('scaler', StandardScaler()),
-            pca_step,
             (pipeline_name, model)
         ])
 
@@ -348,7 +340,7 @@ def calculate_metrics_leave_one_out(performance_metrics_df, is_classification):
     return metrics_global
 
 
-def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform_pca, performance_metrics_df,
+def save_results(leave_one_out_metrics, dataset_name, feature_selection, performance_metrics_df,
                  tune_hyperparameters, is_classification, timestamp, feature_names, dataset_dir):
     """
     Guarda los resultados y la configuración del experimento en un directorio por fecha y dataset.
@@ -357,7 +349,6 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
         leave_one_out_metrics (pd.DataFrame): Métricas agregadas por modelo.
         dataset_name (str): Nombre del dataset usado.
         feature_selection (bool): Si se aplicó selección de características.
-        perform_pca (bool): Si se aplicó PCA.
         performance_metrics_df (pd.DataFrame): Métricas por fold.
         tune_hyperparameters (bool): Si se usó GridSearchCV.
         is_classification (bool): Si es una tarea de clasificación.
@@ -376,7 +367,7 @@ def save_results(leave_one_out_metrics, dataset_name, feature_selection, perform
     config = {
         "dataset": dataset_name,
         "feature_selection": feature_selection,
-        "perform_pca": perform_pca,
+        "perform_pca": False,
         "tune_hyperparameters": tune_hyperparameters,
         "is_classification": is_classification,
         "timestamp": timestamp,
@@ -407,17 +398,14 @@ def main():
                            MODEL_OUTER_SEED,
                            MODEL_INNER_SEED,
                            is_classification,
-                           PERFORM_PCA,
                            target_col, timestamp,
                            tune_hyperparameters=TUNE_HYPERPARAMETERS)
 
 
-def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, perform_pca,
-                   target_col, timestamp, tune_hyperparameters):
+def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, is_classification, target_col, timestamp, tune_hyperparameters):
     logging.info(f"Running {target_col}...")
     logging.info(f"Processing dataset: {dataset_name}")
     performance_metrics_df, feature_names = perform(
-        perform_pca=perform_pca,
         dataset_name=dataset_name,
         global_seed=global_seed,
         inner_cv_seed=inner_cv_seed,
@@ -433,7 +421,7 @@ def run_experiment(dataset_name, feature_selection, global_seed, inner_cv_seed, 
     os.makedirs(dataset_dir, exist_ok=True)
 
     # 5) Persist standard outputs (folds + summary + config)
-    save_results(leave_one_out_metrics_df, dataset_name, feature_selection, perform_pca, performance_metrics_df,
+    save_results(leave_one_out_metrics_df, dataset_name, feature_selection, performance_metrics_df,
                  tune_hyperparameters, is_classification, timestamp, feature_names, dataset_dir
                  )
 
