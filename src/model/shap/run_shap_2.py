@@ -74,8 +74,7 @@ def shap_after_nested_cv(
 
     select_score_func = f_classif if is_classification else f_regression
 
-    rows = []
-    row_index = []
+    explanations = []
     for fold_id, ((train_idx, test_idx), fold_row) in enumerate(zip(fold_splits, folds_df.itertuples(index=False))):
         if fold_id != fold_row.fold:
             raise RuntimeError(f"Fold order mismatch at fold {fold_id} vs {fold_row.fold}.")
@@ -96,22 +95,10 @@ def shap_after_nested_cv(
 
         expl = compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_names, feature_selection,
                                          pipeline)
-        vals = np.array(expl.values).reshape(len(X_test), len(feature_names))
 
-        rows.append(vals)
-        # index = (fold_id, each test sample index)
-        ti = test_idx if isinstance(test_idx, (list, np.ndarray)) else np.array([test_idx])
-        row_index.extend([(fold_id, int(i)) for i in ti])
+        explanations.append(expl)
 
-    # Assemble per-sample SHAP
-    shap_values = np.vstack(rows) if len(rows) else np.empty((0, len(feature_names)))
-    shap_values_df = pd.DataFrame(shap_values, columns=feature_names)
-    shap_values_df.index = pd.MultiIndex.from_tuples(row_index, names=["fold", "test_idx"])
-
-    # Aggregate: mean absolute SHAP per feature
-    mean_abs_shap = shap_values_df.abs().mean(axis=0).sort_values(ascending=False)
-
-    return shap_values_df, mean_abs_shap
+    return explanations
 
 
 def compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_names, feature_selection, pipeline):
@@ -130,7 +117,9 @@ def compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_name
     X_train_transformed = pd.DataFrame(X_train_transformed, columns=shap_feature_names)
     X_test_transformed = pd.DataFrame(X_test_transformed, columns=shap_feature_names)
 
-    explainer = shap.Explainer(estimator, X_train_transformed, feature_names=shap_feature_names)
+    # TODO GIAN: ver porque no funciona el modelo directo, ver si usar decision_function
+    explainer = shap.Explainer(estimator.predict_proba, X_train_transformed, feature_names=shap_feature_names)
+
     # Explain the test sample(s)
     return explainer(X_test_transformed)  # Explanation
 
@@ -171,7 +160,7 @@ def run_shap(task: str, target_col: str, dataset_name: str, timestamp: str, mode
         "folds.csv"
     )
 
-    shap_values_df, mean_abs_shap = shap_after_nested_cv(
+    shap_explanations = shap_after_nested_cv(
         dataset_name=dataset_name,
         target_col=target_col,
         is_classification=is_classification,
@@ -181,7 +170,7 @@ def run_shap(task: str, target_col: str, dataset_name: str, timestamp: str, mode
         folds_csv_path=folds_path,
     )
 
-    print(mean_abs_shap)
+    print(shap_explanations)
 
 
 if __name__ == "__main__":
