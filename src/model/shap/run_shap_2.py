@@ -115,8 +115,11 @@ def compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_name
         shap_feature_names = np.asarray(feature_names)
 
     # TODO GIAN: ver porque no funciona el modelo directo, ver si usar decision_function
-    explainer = shap.Explainer(estimator.predict_proba, X_train_transformed, feature_names=shap_feature_names)
+    explainer = shap.KernelExplainer(estimator.predict_proba, X_train_transformed, feature_names=shap_feature_names)
 
+    kind = f"{explainer.__module__}.{explainer.__class__.__name__}"
+    link = getattr(explainer.link, "__class__", type(explainer.link)).__name__
+    print(f"[SHAP] backend: {kind} | link: {link}")
     # Explain the test sample(s)
     return explainer(X_test_transformed)  # Explanation
 
