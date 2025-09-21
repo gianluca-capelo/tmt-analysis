@@ -9,6 +9,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.model_selection import LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 
 from src.config import MAX_SELECTED_FEATURES, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR
 from src.model.run_models import retrieve_dataset, get_models
@@ -105,15 +106,10 @@ def shap_after_nested_cv(
         # Fit on training portion of this fold
         pipe.fit(X_train, y_train)
 
-        # TODO GIAN: ver si usar background y si esta bien usar todo como background
-        background_X = X_train
-
         # Build a callable on original features
         f = _callable_for_shap(pipe, is_classification)
 
-        # Create explainer (model-agnostic)
-        masker = shap.maskers.Independent(background_X)
-        explainer = shap.Explainer(f, masker=masker, feature_names=feature_names)
+        explainer = shap.Explainer(f, X_train, feature_names=feature_names)
 
         # Explain the test sample(s)
         expl = explainer(X_test)  # Explanation
