@@ -114,9 +114,6 @@ def compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_name
     else:
         shap_feature_names = np.asarray(feature_names)
 
-    X_train_transformed = pd.DataFrame(X_train_transformed, columns=shap_feature_names)
-    X_test_transformed = pd.DataFrame(X_test_transformed, columns=shap_feature_names)
-
     # TODO GIAN: ver porque no funciona el modelo directo, ver si usar decision_function
     explainer = shap.Explainer(estimator.predict_proba, X_train_transformed, feature_names=shap_feature_names)
 
