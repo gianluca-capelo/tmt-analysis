@@ -9,6 +9,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.model_selection import LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 
 from src.config import MAX_SELECTED_FEATURES, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR
 from src.model.run_models import retrieve_dataset, get_models
@@ -94,14 +95,23 @@ def shap_after_nested_cv(
         pipeline.fit(X_train, y_train)
 
         expl = compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_names, feature_selection,
-                                         pipeline)
+                                         pipeline, is_classification)
 
         explanations.append(expl)
 
     return explanations
 
+def _callable_for_shap(estimator, is_classification):
+    if is_classification:
+        if hasattr(estimator, "predict_proba"):
+            return estimator.predict_proba
+        else:
+            raise ValueError("At the moment, only classifiers with predict_proba are supported for SHAP.")
+    else:
+        return estimator.predict
 
-def compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_names, feature_selection, pipeline):
+
+def compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_names, feature_selection, pipeline, is_classification=True):
     # SHAP computation
     preprocess = pipeline[:-1]
     estimator = pipeline.named_steps[estimator_step_name]
@@ -114,8 +124,8 @@ def compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_name
     else:
         shap_feature_names = np.asarray(feature_names)
 
-    # TODO GIAN: ver porque no funciona el modelo directo, ver si usar decision_function
-    explainer = shap.KernelExplainer(estimator.predict_proba, X_train_transformed, feature_names=shap_feature_names)
+    f_callable = _callable_for_shap(estimator, is_classification)
+    explainer = shap.Explainer(f_callable, X_train_transformed, feature_names=shap_feature_names)
 
     kind = f"{explainer.__module__}.{explainer.__class__.__name__}"
     link = getattr(explainer.link, "__class__", type(explainer.link)).__name__
