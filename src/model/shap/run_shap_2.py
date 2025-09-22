@@ -9,7 +9,6 @@ from sklearn.impute import SimpleImputer
 from sklearn.model_selection import LeaveOneOut
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
 
 from src.config import MAX_SELECTED_FEATURES, CLASSIFICATION_RESULTS_DIR, REGRESSION_RESULTS_DIR
 from src.model.run_models import retrieve_dataset, get_models
@@ -101,6 +100,7 @@ def shap_after_nested_cv(
 
     return explanations
 
+
 def _callable_for_shap(estimator, is_classification):
     if is_classification:
         if hasattr(estimator, "predict_proba"):
@@ -111,7 +111,8 @@ def _callable_for_shap(estimator, is_classification):
         return estimator.predict
 
 
-def compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_names, feature_selection, pipeline, is_classification=True):
+def compute_shap_for_pipeline(X_test, X_train, estimator_step_name, feature_names, feature_selection, pipeline,
+                              is_classification=True):
     # SHAP computation
     preprocess = pipeline[:-1]
     estimator = pipeline.named_steps[estimator_step_name]
