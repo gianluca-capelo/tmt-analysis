@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 from typing import Iterable
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
@@ -109,9 +108,7 @@ def build_mean_shap_df(shap_abs_df, fillna_zero=False):
 
 
 import matplotlib.pyplot as plt
-
-import matplotlib.pyplot as plt
-from src.config import FIGURES_DIR  # asegúrate de que FIGURES sea un Path o string válido
+from src.config import FIGURES_DIR
 
 
 def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True, save_filename=None):

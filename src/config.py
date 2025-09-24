@@ -40,8 +40,6 @@ LOGGING_CONFIG = {
     'format': '%(asctime)s - %(levelname)s - %(message)s'
 }
 
-FIGURES_DIR = os.path.join(BASE_DIR, "figures")
-
 # RADIUS_HEIGHT = 0.0275 # 10% added to original size
 RADIUS_HEIGHT = 0.0275
 
