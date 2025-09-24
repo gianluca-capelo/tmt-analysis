@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Iterable, Tuple, Dict
+from typing import Iterable
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
+
 
 def extract_positive_class_explanations(explanations):
     positive_class_explanations = []
@@ -35,6 +36,7 @@ def extract_positive_class_explanations(explanations):
 
     return positive_class_explanations
 
+
 def build_shap_absolute_df(explanations):
     # Lista de dicts: {feature: abs(shap)}
     rows = []
@@ -50,7 +52,8 @@ def build_shap_absolute_df(explanations):
     df = pd.DataFrame(rows)
     return df
 
-def analyze_shap_results(explanations: Iterable[shap.Explanation]) -> pd.DataFrame:
+
+def analyze_shap_results(explanations: Iterable[shap.Explanation], fillna_zero=False) -> pd.DataFrame:
     """
     Analyze SHAP explanations to compute mean absolute SHAP values for each feature.
 
@@ -66,49 +69,71 @@ def analyze_shap_results(explanations: Iterable[shap.Explanation]) -> pd.DataFra
     # Construir DataFrame de valores absolutos de SHAP
     shap_abs_df = build_shap_absolute_df(positive_class_explanations)
 
-    freq = shap_abs_df.notna().mean()
-
-    # Promedio condicional (solo folds con valor, ignora NaN)
-    mean_cond = shap_abs_df.mean(skipna=True)
-
-    # Resultado combinado
-    result_df = pd.DataFrame({
-        "mean_abs_shap_cond": mean_cond,
-        "freq_selection": freq
-    }).sort_values("mean_abs_shap_cond", ascending=False)
+    result_df = build_mean_shap_df(shap_abs_df, fillna_zero=fillna_zero)
 
     return result_df
 
 
-import matplotlib.pyplot as plt
-
-def plot_shap_summary(df, top_n=20):
+def build_mean_shap_df(shap_abs_df, fillna_zero=False):
     """
-    Plotea el DataFrame resultante de shap_mean_conditional.
+    Build a summary DataFrame with mean absolute SHAP values and selection frequency.
 
     Args:
-        df: DataFrame con columnas ['mean_abs_shap_cond', 'freq_selection'].
-        top_n: cuántos features mostrar (ordenados por mean_abs_shap_cond).
+        shap_abs_df: DataFrame (folds x features) with absolute SHAP values.
+                     NaN indicates the feature was not selected in that fold.
+        fillna_zero: if True, compute the mean replacing NaN with 0
+                     (global mean including non-selected folds).
+                     if False, compute the mean only across selected folds.
+
+    Returns:
+        result_df: DataFrame with columns:
+                   - 'mean_abs_shap': mean |SHAP| per feature
+                   - 'freq_selection': proportion of folds where the feature was selected
+    """
+    freq = shap_abs_df.notna().mean()
+
+    if fillna_zero:
+        mean_vals = shap_abs_df.fillna(0).mean()
+    else:
+        mean_vals = shap_abs_df.mean(skipna=True)
+
+    result_df = pd.DataFrame({
+        "mean_abs_shap": mean_vals,
+        "freq_selection": freq
+    }).sort_values("mean_abs_shap", ascending=False)
+
+    return result_df
+
+
+def plot_shap_summary(df, top_n=20, plot_freq=False):
+    """
+    Plotea el DataFrame resultante de shap_mean_conditional en formato horizontal.
+
+    Args:
+        df: DataFrame con columnas ['mean_abs_shap', 'freq_selection'].
+        top_n: cuántos features mostrar (ordenados por mean_abs_shap).
+        plot_freq: si True, agrega la frecuencia de selección en un eje X secundario.
     """
     # Ordenar y limitar al top_n
-    df_plot = df.sort_values("mean_abs_shap_cond", ascending=False).head(top_n)
+    df_plot = df.sort_values("mean_abs_shap", ascending=True).tail(top_n)
 
     fig, ax1 = plt.subplots(figsize=(10, 6))
 
-    # Eje 1: barras de |SHAP| medio condicional
-    ax1.bar(df_plot.index, df_plot["mean_abs_shap_cond"], color="steelblue", alpha=0.7)
-    ax1.set_ylabel("Mean |SHAP| (condicional)", color="steelblue")
-    ax1.tick_params(axis="y", labelcolor="steelblue")
-    ax1.set_xticklabels(df_plot.index, rotation=45, ha="right")
+    # Eje 1: barras horizontales de |SHAP| medio condicional
+    ax1.barh(df_plot.index, df_plot["mean_abs_shap"], color="steelblue", alpha=0.7)
+    ax1.set_xlabel("Mean |SHAP| (condicional)", color="steelblue")
+    ax1.tick_params(axis="x", labelcolor="steelblue")
 
-    # Eje 2: frecuencia de selección
-    ax2 = ax1.twinx()
-    ax2.plot(df_plot.index, df_plot["freq_selection"], color="darkorange",
-             marker="o", linestyle="-", linewidth=2)
-    ax2.set_ylabel("Frecuencia de selección", color="darkorange")
-    ax2.tick_params(axis="y", labelcolor="darkorange")
-    ax2.set_ylim(0, 1)  # frecuencia en [0,1]
+    # Eje 2 opcional: frecuencia de selección
+    if plot_freq:
+        ax2 = ax1.twiny()
+        ax2.plot(df_plot["freq_selection"], df_plot.index, color="darkorange",
+                 marker="o", linestyle="-", linewidth=2)
+        ax2.set_xlabel("Frecuencia de selección", color="darkorange")
+        ax2.tick_params(axis="x", labelcolor="darkorange")
+        ax2.set_xlim(0, 1)  # frecuencia en [0,1]
 
-    plt.title("Importancia media de SHAP (clase positiva) y frecuencia de selección")
+    plt.title("Importancia media de SHAP (clase positiva)" +
+              (" y frecuencia de selección" if plot_freq else ""))
     plt.tight_layout()
     plt.show()
