@@ -1,10 +1,8 @@
-import numpy as np
-import pandas as pd
-
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Iterable, Tuple, Dict
+
 import numpy as np
 import pandas as pd
 
@@ -19,60 +17,67 @@ class _Accumulators:
 
 def _resolve_feature_axis(expl) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    Devuelve (values_signed, values_abs, feature_names) con las dimensiones tal como vienen del objeto SHAP.
-    NO colapsa el eje de clases; solo asegura que el eje de features sea el último.
-    Soporta:
-      - (n_samples, n_features)
-      - (n_samples, n_classes, n_features)
-      - (n_samples, n_features, n_classes) -> reordena a (n_samples, n_classes, n_features)
-      - (n_features,) -> lo eleva a (1, n_features)
+    Acepta ÚNICAMENTE Explanation con values de forma (n_samples, n_features, n_classes),
+    donde len(feature_names) == n_features. Devuelve:
+      - values_signed: (n_samples, n_classes, n_features)
+      - values_abs   : (n_samples, n_classes, n_features)
+      - feature_names: (n_features,)
+
+    Si el objeto no cumple exactamente ese formato, lanza ValueError.
     """
-    feat_names = getattr(expl, "feature_names", None) or getattr(expl, "data_feature_names", None)
-    if feat_names is None:
+    # 1) Nombres de features
+    feature_names = getattr(expl, "feature_names", None) or getattr(expl, "data_feature_names", None)
+    if feature_names is None:
         raise ValueError("No se encontraron nombres de features en la Explanation.")
-    feat_names = np.asarray(feat_names)
+    feature_names = np.asarray(feature_names)
 
-    values = np.array(expl.values)
-    # if values.ndim == 1:
-    #     values = values[None, :]  # -> (1, n_features) o (1, n_classes)
-    # if values.ndim == 2:
-    #     # Puede ser (n_samples, n_features) o (n_samples, n_classes).
-    #     # Si el último eje coincide con #features, asumimos (n_samples, n_features).
-    #     if values.shape[-1] == len(feat_names):
-    #         signed = values
-    #         absvals = np.abs(values)
-    #         return signed, absvals, feat_names
-    #     # ¿Transpuesto? (n_features, n_samples) -> (n_samples, n_features)
-    #     if values.shape[0] == len(feat_names):
-    #         values = values.T
-    #         signed = values
-    #         absvals = np.abs(values)
-    #         return signed, absvals, feat_names
-    #     # Si llega aquí, probablemente sea (n_samples, n_classes) sin eje de features.
-    #     raise ValueError(
-    #         f"Forma 2D ambigua {values.shape}: no coincide con n_features={len(feat_names)}. "
-    #         "El explainer/modelo no está entregando attributions por feature."
-    #     )
-
-    if values.ndim == 3:
-        # Puede ser (n_samples, n_classes, n_features) o (n_samples, n_features, n_classes)
-        if values.shape[-1] == len(feat_names):
-            # (n_samples, n_classes, n_features)
-            signed = values
-            absvals = np.abs(values)
-            return signed, absvals, feat_names
-        # Si features está en la penúltima, intercambiamos
-        if values.shape[-2] == len(feat_names):
-            values = np.swapaxes(values, -1, -2)  # -> (n_samples, n_classes, n_features)
-            signed = values
-            absvals = np.abs(values)
-            return signed, absvals, feat_names
-
+    # 2) Valores SHAP
+    values = np.asarray(expl.values)
+    if values.ndim != 3:
         raise ValueError(
-            f"No se pudo identificar el eje de features en {values.shape} con n_features={len(feat_names)}."
+            f"Se esperaba values con 3 dimensiones (n_samples, n_features, n_classes); recibido {values.shape}."
         )
 
-    raise ValueError(f"Dimensión de valores SHAP no soportada: {values.shape}")
+    n_samples, n_features, n_classes = values.shape
+    if n_classes != 2:
+        raise ValueError(
+            f"Se esperaba n_classes=2 (binario); recibido n_classes={n_classes}."
+        )
+    if len(feature_names) != n_features:
+        raise ValueError(
+            f"Inconsistencia: len(feature_names)={len(feature_names)} != n_features={n_features}."
+        )
+
+    # (Opcional, estricto) validar base_values si existe
+    validate_base_values(expl, n_classes, n_samples)
+
+    # 3) Reordenar a (n_samples, n_classes, n_features) para el pipeline aguas abajo
+    values_signed = np.swapaxes(values, -1, -2)  # (n_samples, n_classes, n_features)
+    values_abs = np.abs(values_signed)
+
+    return values_signed, values_abs, feature_names
+
+
+def validate_base_values(expl, n_classes, n_samples):
+    base = getattr(expl, "base_values", None)
+    if base is not None:
+        base_arr = np.asarray(base)
+        # Permitimos (n_samples, n_classes) o (n_classes,)
+        if base_arr.ndim == 2:
+            if base_arr.shape != (n_samples, n_classes):
+                raise ValueError(
+                    f"base_values debe tener forma (n_samples, n_classes)={(n_samples, n_classes)}; "
+                    f"recibido {base_arr.shape}."
+                )
+        elif base_arr.ndim == 1:
+            if base_arr.shape[0] != n_classes:
+                raise ValueError(
+                    f"base_values debe tener longitud n_classes={n_classes}; recibido {base_arr.shape[0]}."
+                )
+        else:
+            raise ValueError(
+                f"base_values con dimensionalidad no soportada: {base_arr.shape}."
+            )
 
 
 def _collapse_classes_to_sample_feature(
@@ -86,8 +91,8 @@ def _collapse_classes_to_sample_feature(
           * en valor absoluto: promedio de absolutos por clase
       Devuelve dos arrays 2D: (n_samples, n_features).
     """
-    if signed_any.ndim == 2:
-        return signed_any, abs_any
+    # if signed_any.ndim == 2:
+    #     return signed_any, abs_any
     if signed_any.ndim == 3:
         signed_sf = signed_any.mean(axis=1)
         abs_sf = abs_any.mean(axis=1)
