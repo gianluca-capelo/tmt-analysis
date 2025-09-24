@@ -105,35 +105,38 @@ def build_mean_shap_df(shap_abs_df, fillna_zero=False):
     return result_df
 
 
+import matplotlib.pyplot as plt
+
+
 def plot_shap_summary(df, top_n=20, plot_freq=False):
     """
-    Plotea el DataFrame resultante de shap_mean_conditional en formato horizontal.
+    Plot SHAP summary in horizontal format.
 
     Args:
-        df: DataFrame con columnas ['mean_abs_shap', 'freq_selection'].
-        top_n: cuántos features mostrar (ordenados por mean_abs_shap).
-        plot_freq: si True, agrega la frecuencia de selección en un eje X secundario.
+        df: DataFrame with columns ['mean_abs_shap', 'freq_selection'].
+        top_n: number of features to display (ordered by mean_abs_shap).
+        plot_freq: if True, add selection frequency on a secondary X axis.
     """
-    # Ordenar y limitar al top_n
+    # Sort by mean absolute SHAP value and keep the top_n features
     df_plot = df.sort_values("mean_abs_shap", ascending=True).tail(top_n)
 
     fig, ax1 = plt.subplots(figsize=(10, 6))
 
-    # Eje 1: barras horizontales de |SHAP| medio condicional
+    # Axis 1: horizontal bars of mean absolute SHAP values (across selected folds)
     ax1.barh(df_plot.index, df_plot["mean_abs_shap"], color="steelblue", alpha=0.7)
-    ax1.set_xlabel("Mean |SHAP| (condicional)", color="steelblue")
+    ax1.set_xlabel("Mean |SHAP| (across selected folds)", color="steelblue")
     ax1.tick_params(axis="x", labelcolor="steelblue")
 
-    # Eje 2 opcional: frecuencia de selección
+    # Optional Axis 2: selection frequency
     if plot_freq:
         ax2 = ax1.twiny()
         ax2.plot(df_plot["freq_selection"], df_plot.index, color="darkorange",
                  marker="o", linestyle="-", linewidth=2)
-        ax2.set_xlabel("Frecuencia de selección", color="darkorange")
+        ax2.set_xlabel("Selection frequency", color="darkorange")
         ax2.tick_params(axis="x", labelcolor="darkorange")
-        ax2.set_xlim(0, 1)  # frecuencia en [0,1]
+        ax2.set_xlim(0, 1)  # frequency is between 0 and 1
 
-    plt.title("Importancia media de SHAP (clase positiva)" +
-              (" y frecuencia de selección" if plot_freq else ""))
+    plt.title("Mean SHAP importance" +
+              (" and selection frequency" if plot_freq else ""))
     plt.tight_layout()
     plt.show()
