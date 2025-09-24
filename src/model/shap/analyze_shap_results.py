@@ -107,8 +107,7 @@ def build_mean_shap_df(shap_abs_df, fillna_zero=False):
 
 import matplotlib.pyplot as plt
 
-
-def plot_shap_summary(df, top_n=20, plot_freq=False):
+def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True):
     """
     Plot SHAP summary in horizontal format.
 
@@ -116,16 +115,30 @@ def plot_shap_summary(df, top_n=20, plot_freq=False):
         df: DataFrame with columns ['mean_abs_shap', 'freq_selection'].
         top_n: number of features to display (ordered by mean_abs_shap).
         plot_freq: if True, add selection frequency on a secondary X axis.
+        annotate_values: if True, annotate each bar with its mean SHAP value.
     """
     # Sort by mean absolute SHAP value and keep the top_n features
     df_plot = df.sort_values("mean_abs_shap", ascending=True).tail(top_n)
 
     fig, ax1 = plt.subplots(figsize=(10, 6))
 
-    # Axis 1: horizontal bars of mean absolute SHAP values (across selected folds)
-    ax1.barh(df_plot.index, df_plot["mean_abs_shap"], color="steelblue", alpha=0.7)
-    ax1.set_xlabel("Mean |SHAP| (across selected folds)", color="steelblue")
-    ax1.tick_params(axis="x", labelcolor="steelblue")
+    # Axis 1: horizontal bars of mean absolute SHAP values
+    bar_color = "steelblue"
+    bars = ax1.barh(df_plot.index, df_plot["mean_abs_shap"], alpha=0.7)
+    ax1.set_xlabel("Mean |SHAP| (across selected folds)")
+    ax1.tick_params(axis="x")
+
+    # Add text annotations at the end of each bar
+    if annotate_values:
+        max_val = df_plot["mean_abs_shap"].max()
+        for bar in bars:
+            width = bar.get_width()
+            ax1.text(width,
+                     bar.get_y() + bar.get_height()/2,
+                     f"+{width:.3f}",
+                     va="center", ha="left", fontsize=9, color=bar_color)
+        # Extend x-axis limit to avoid cutting off text
+        ax1.set_xlim(0, max_val * 1.1)
 
     # Optional Axis 2: selection frequency
     if plot_freq:
@@ -134,9 +147,10 @@ def plot_shap_summary(df, top_n=20, plot_freq=False):
                  marker="o", linestyle="-", linewidth=2)
         ax2.set_xlabel("Selection frequency", color="darkorange")
         ax2.tick_params(axis="x", labelcolor="darkorange")
-        ax2.set_xlim(0, 1)  # frequency is between 0 and 1
+        ax2.set_xlim(0, 1)
 
     plt.title("Mean SHAP importance" +
               (" and selection frequency" if plot_freq else ""))
     plt.tight_layout()
     plt.show()
+
