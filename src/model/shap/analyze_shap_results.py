@@ -54,7 +54,7 @@ def build_shap_absolute_df(explanations):
     return df
 
 
-def analyze_shap_results(explanations: Iterable[shap.Explanation], fillna_zero=False) -> pd.DataFrame:
+def analyze_shap_results(explanations: Iterable[shap.Explanation], task: str, fillna_zero=False) -> pd.DataFrame:
     """
     Analyze SHAP explanations to compute mean absolute SHAP values for each feature.
 
@@ -65,10 +65,10 @@ def analyze_shap_results(explanations: Iterable[shap.Explanation], fillna_zero=F
     pd.DataFrame: A DataFrame with features as index and their mean absolute SHAP values.
     """
     # Extraer explicaciones para la clase positiva
-    positive_class_explanations = extract_positive_class_explanations(explanations)
+    explanations = extract_positive_class_explanations(explanations) if task == "classification" else explanations
 
     # Construir DataFrame de valores absolutos de SHAP
-    shap_abs_df = build_shap_absolute_df(positive_class_explanations)
+    shap_abs_df = build_shap_absolute_df(explanations)
 
     result_df = build_mean_shap_df(shap_abs_df, fillna_zero=fillna_zero)
 
@@ -153,7 +153,7 @@ def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True, save_
         ax2.tick_params(axis="x", labelcolor="darkorange")
         ax2.set_xlim(0, 1)
 
-    plt.title("Mean SHAP importance (positive class)" +
+    plt.title("Mean SHAP importance" +
               (" and selection frequency" if plot_freq else ""))
     plt.tight_layout()
 
@@ -167,18 +167,37 @@ def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True, save_
         plt.show()
 
 
-if __name__ == "__main__":
-    shap_explanations = run_shap(
-        dataset_name="demographic+digital",
-        target_col="group",
-        task="classification",
-        model_name_to_explain="SVC",
-        timestamp="2025-09-12_1559",
-    )
+def main(is_classification):
+    if is_classification:
+        target_col = "group"  # Binary classification
+        model = "SVC"
+        timestamp = "2025-09-12_1559"
+        save_filename = "shap_summary_classification.png"
+        dataset_name = "demographic+digital"
+    else:
+        target_col = "mmse"
+        model = "RandomForestRegressor"
+        timestamp = "2025-09-14_1008"
+        save_filename = "shap_summary_regression.png"
+        dataset_name = "demographic+digital"
+    run_analysis(dataset_name, is_classification, model, timestamp, save_filename, target_col)
 
-    shap_df = analyze_shap_results(shap_explanations, fillna_zero=False)
+
+def run_analysis(dataset_name, is_classification, model, timestamp, save_filename, target_col):
+    shap_explanations = run_shap(
+        dataset_name=dataset_name,
+        target_col=target_col,
+        task="classification" if is_classification else "regression",
+        model_name_to_explain=model,
+        timestamp=timestamp
+    )
+    shap_df = analyze_shap_results(shap_explanations, fillna_zero=False,
+                                   task="classification" if is_classification else "regression")
     print(shap_df.head(10))
     plot_shap_summary(shap_df, top_n=20,
-                      save_filename="shap_summary.png")
+                      save_filename=save_filename)
 
 
+if __name__ == "__main__":
+    is_classification = False
+    main(is_classification)
