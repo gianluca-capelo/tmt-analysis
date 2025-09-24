@@ -40,7 +40,6 @@ def extract_positive_class_explanations(explanations):
 
 
 def build_shap_absolute_df(explanations):
-    # Lista de dicts: {feature: abs(shap)}
     rows = []
 
     for expl in explanations:
