@@ -10,6 +10,8 @@ from sklearn.svm import SVR, SVC
 RANDOM_STATE = 78
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+FIGURES_DIR = os.path.join(BASE_DIR, "figures")
+
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 PROCESSED_FOR_MODEL_DIR = os.path.join(DATA_DIR, "processed")

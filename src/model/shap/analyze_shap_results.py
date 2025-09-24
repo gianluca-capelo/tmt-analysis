@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import os
 from typing import Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shap
+
+from src.model.shap.run_shap import run_shap
 
 
 def extract_positive_class_explanations(explanations):
@@ -107,7 +110,11 @@ def build_mean_shap_df(shap_abs_df, fillna_zero=False):
 
 import matplotlib.pyplot as plt
 
-def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True):
+import matplotlib.pyplot as plt
+from src.config import FIGURES_DIR  # asegúrate de que FIGURES sea un Path o string válido
+
+
+def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True, save_filename=None):
     """
     Plot SHAP summary in horizontal format.
 
@@ -116,6 +123,7 @@ def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True):
         top_n: number of features to display (ordered by mean_abs_shap).
         plot_freq: if True, add selection frequency on a secondary X axis.
         annotate_values: if True, annotate each bar with its mean SHAP value.
+        save_filename: if not None, save the figure in FIGURES directory with this filename.
     """
     # Sort by mean absolute SHAP value and keep the top_n features
     df_plot = df.sort_values("mean_abs_shap", ascending=True).tail(top_n)
@@ -124,9 +132,9 @@ def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True):
 
     # Axis 1: horizontal bars of mean absolute SHAP values
     bar_color = "steelblue"
-    bars = ax1.barh(df_plot.index, df_plot["mean_abs_shap"], alpha=0.7)
-    ax1.set_xlabel("Mean |SHAP| (across selected folds)")
-    ax1.tick_params(axis="x")
+    bars = ax1.barh(df_plot.index, df_plot["mean_abs_shap"], color=bar_color, alpha=0.7)
+    ax1.set_xlabel("Mean |SHAP| (across selected folds)", color=bar_color)
+    ax1.tick_params(axis="x", labelcolor=bar_color)
 
     # Add text annotations at the end of each bar
     if annotate_values:
@@ -134,7 +142,7 @@ def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True):
         for bar in bars:
             width = bar.get_width()
             ax1.text(width,
-                     bar.get_y() + bar.get_height()/2,
+                     bar.get_y() + bar.get_height() / 2,
                      f"+{width:.3f}",
                      va="center", ha="left", fontsize=9, color=bar_color)
         # Extend x-axis limit to avoid cutting off text
@@ -149,8 +157,32 @@ def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True):
         ax2.tick_params(axis="x", labelcolor="darkorange")
         ax2.set_xlim(0, 1)
 
-    plt.title("Mean SHAP importance" +
+    plt.title("Mean SHAP importance (positive class)" +
               (" and selection frequency" if plot_freq else ""))
     plt.tight_layout()
-    plt.show()
+
+    # Save or show
+    if save_filename:
+        save_path = os.path.join(FIGURES_DIR, save_filename)
+        fig.savefig(save_path, bbox_inches="tight", dpi=300)
+        plt.close(fig)
+        print(f"Figure saved to: {save_path}")
+    else:
+        plt.show()
+
+
+if __name__ == "__main__":
+    shap_explanations = run_shap(
+        dataset_name="demographic+digital",
+        target_col="group",
+        task="classification",
+        model_name_to_explain="SVC",
+        timestamp="2025-09-12_1559",
+    )
+
+    shap_df = analyze_shap_results(shap_explanations, fillna_zero=False)
+    print(shap_df.head(10))
+    plot_shap_summary(shap_df, top_n=20,
+                      save_filename="shap_summary.png")
+
 
