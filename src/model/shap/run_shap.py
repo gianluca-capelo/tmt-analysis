@@ -184,13 +184,3 @@ def run_shap(task: str, target_col: str, dataset_name: str, timestamp: str, mode
     print(shap_explanations)
 
     return shap_explanations
-
-
-if __name__ == "__main__":
-    run_shap(
-        dataset_name="demographic+digital",
-        target_col="group",
-        task="classification",
-        model_name_to_explain="SVC",
-        timestamp="2025-09-12_1559"
-    )
