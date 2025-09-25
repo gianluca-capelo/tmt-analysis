@@ -167,22 +167,6 @@ def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True, save_
         plt.show()
 
 
-def main(is_classification):
-    if is_classification:
-        target_col = "group"  # Binary classification
-        model = "SVC"
-        timestamp = "2025-09-12_1559"
-        save_filename = "shap_summary_classification.png"
-        dataset_name = "demographic+digital"
-    else:
-        target_col = "mmse"
-        model = "RandomForestRegressor"
-        timestamp = "2025-09-14_1008"
-        save_filename = "shap_summary_regression.png"
-        dataset_name = "demographic+digital"
-    run_analysis(dataset_name, is_classification, model, timestamp, save_filename, target_col)
-
-
 def run_analysis(dataset_name, is_classification, model, timestamp, save_filename, target_col):
     shap_explanations = run_shap(
         dataset_name=dataset_name,
@@ -198,6 +182,23 @@ def run_analysis(dataset_name, is_classification, model, timestamp, save_filenam
                       save_filename=save_filename)
 
 
+def main(is_classification, timestamp):
+    if is_classification:
+        target_col = "group"  # Binary classification
+        model = "SVC"
+        timestamp = timestamp
+        save_filename = "shap_summary_classification.png"
+        dataset_name = "demographic+digital"
+    else:
+        target_col = "mmse"
+        model = "RandomForestRegressor"
+        timestamp = timestamp
+        save_filename = "shap_summary_regression.png"
+        dataset_name = "demographic+digital"
+    run_analysis(dataset_name, is_classification, model, timestamp, save_filename, target_col)
+
+
 if __name__ == "__main__":
     is_classification = True
-    main(is_classification)
+    timestamp = "2025-09-12_1559" if is_classification else "2025-09-14_1008"
+    main(is_classification, timestamp)
