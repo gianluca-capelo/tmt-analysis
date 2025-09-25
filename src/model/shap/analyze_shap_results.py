@@ -110,7 +110,15 @@ import matplotlib.pyplot as plt
 from src.config import FIGURES_DIR
 
 
-def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True, save_filename=None):
+def clean_target_col(target_col):
+    if target_col.lower() == "mmse":
+        return "MMSE"
+
+    return target_col.upper()
+
+
+def plot_shap_summary(df, is_classification, target_col, top_n=20, plot_freq=False, annotate_values=True,
+                      save_filename=None):
     """
     Plot SHAP summary in horizontal format.
 
@@ -153,7 +161,13 @@ def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True, save_
         ax2.tick_params(axis="x", labelcolor="darkorange")
         ax2.set_xlim(0, 1)
 
-    plt.title("Mean SHAP importance" +
+    # Titles and layout
+    if is_classification:
+        title = "Mean SHAP importance"
+    else:
+        title = f"Mean SHAP importance for {clean_target_col(target_col)}"
+
+    plt.title(title +
               (" and selection frequency" if plot_freq else ""))
     plt.tight_layout()
 
@@ -179,7 +193,7 @@ def run_analysis(dataset_name, is_classification, model, timestamp, save_filenam
                                    task="classification" if is_classification else "regression")
     print(shap_df.head(10))
     plot_shap_summary(shap_df, top_n=20,
-                      save_filename=save_filename)
+                      save_filename=save_filename, is_classification=is_classification, target_col=target_col)
 
 
 def main(is_classification, timestamp):
@@ -199,6 +213,6 @@ def main(is_classification, timestamp):
 
 
 if __name__ == "__main__":
-    is_classification = True
+    is_classification = False
     timestamp = "2025-09-12_1559" if is_classification else "2025-09-14_1008"
     main(is_classification, timestamp)
