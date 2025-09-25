@@ -128,9 +128,9 @@ def plot_shap_summary(df, top_n=20, plot_freq=False, annotate_values=True, save_
 
     # Axis 1: horizontal bars of mean absolute SHAP values
     bar_color = "steelblue"
-    bars = ax1.barh(df_plot.index, df_plot["mean_abs_shap"], color=bar_color, alpha=0.7)
-    ax1.set_xlabel("Mean |SHAP| (across selected folds)", color=bar_color)
-    ax1.tick_params(axis="x", labelcolor=bar_color)
+    bars = ax1.barh(df_plot.index, df_plot["mean_abs_shap"], alpha=0.7)
+    ax1.set_xlabel("Mean |SHAP| (across selected folds)")
+    ax1.tick_params(axis="x")
 
     # Add text annotations at the end of each bar
     if annotate_values:
