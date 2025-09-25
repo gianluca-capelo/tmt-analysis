@@ -163,10 +163,10 @@ CLASSIFICATION_TARGET = 'group'
 
 def CLASSIFICATION_MODELS(random_state):
     return [
-        #RandomForestClassifier(random_state=random_state, n_jobs=-1),
+        RandomForestClassifier(random_state=random_state, n_jobs=-1),
         SVC(random_state=random_state, probability=True),
-        #LogisticRegression(max_iter=1000, random_state=random_state, n_jobs=-1),
-        #xgb.XGBClassifier(random_state=random_state, n_jobs=-1)
+        LogisticRegression(max_iter=1000, random_state=random_state, n_jobs=-1),
+        xgb.XGBClassifier(random_state=random_state, n_jobs=-1)
     ]
 
 
