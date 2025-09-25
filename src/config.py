@@ -10,6 +10,8 @@ from sklearn.svm import SVR, SVC
 RANDOM_STATE = 78
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+FIGURES_DIR = os.path.join(BASE_DIR, "figures")
+
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 PROCESSED_FOR_MODEL_DIR = os.path.join(DATA_DIR, "processed")
@@ -37,8 +39,6 @@ LOGGING_CONFIG = {
     'level': 'INFO',
     'format': '%(asctime)s - %(levelname)s - %(message)s'
 }
-
-FIGURES_DIR = os.path.join(BASE_DIR, "figures")
 
 # RADIUS_HEIGHT = 0.0275 # 10% added to original size
 RADIUS_HEIGHT = 0.0275
@@ -145,11 +145,8 @@ DATASETS = [
 MODEL_OUTER_SEED = 47
 MODEL_INNER_SEED = 66
 INNER_CV_SPLITS=10
-PERFORM_PCA = False
-PERFORM_SHAP = False
 TUNE_HYPERPARAMETERS = True
 PERFORM_FEATURE_SELECTION = True
-MAX_PCA_COMPONENTS = 4
 MAX_SELECTED_FEATURES = 20
 REGRESSION_TARGETS = [
     "mmse",
