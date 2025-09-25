@@ -199,5 +199,5 @@ def run_analysis(dataset_name, is_classification, model, timestamp, save_filenam
 
 
 if __name__ == "__main__":
-    is_classification = False
+    is_classification = True
     main(is_classification)
