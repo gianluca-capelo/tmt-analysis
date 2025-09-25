@@ -135,11 +135,11 @@ trial_id_map = {(
 MANUAL_REJECTED_SUBJECTS = {25, 32, 33, 55, 56, 71, 75, 80, 96}
 
 DATASETS = [
-    #'demographic',
-    #'digital_test',
+    'demographic',
+    'digital_test',
     'demographic+digital',
-    #'non_digital_tests',
-    #'non_digital_tests+demo',
+    'non_digital_tests',
+    'non_digital_tests+demo',
 ]
 
 MODEL_OUTER_SEED = 47
