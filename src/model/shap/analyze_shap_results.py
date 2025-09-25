@@ -136,6 +136,33 @@ def plot_shap_summary(df, is_classification, target_col, top_n=20, plot_freq=Fal
 
     # Axis 1: horizontal bars of mean absolute SHAP values
     bar_color = "steelblue"
+
+
+    # Warning: Complete feature labels for classification, need to be completed for regression
+    feature_labels = {
+        "is_valid_sum_A": "Valid sum (Part A)",
+        "non_cut_correct_targets_touches_PART_B": "Complete correct touches (Part B)",
+        "is_valid_sum_B": "Valid sum (Part B)",
+        "max_duration_B_A_ratio": "Hesitation Max duration (B/A ratio)",
+        "non_cut_correct_targets_touches_B_A_ratio": "Complete correct touches (B/A ratio)",
+        "travel_time_PART_A": "Travel time (Part A)",
+        "travel_time_PART_B": "Travel time (Part B)",
+        "total_hesitations_PART_A": "Hesitations (Part A)",
+        "travel_distance_B_A_ratio": "Travel distance (B/A ratio)",
+        "state_transitions_PART_A": "State transitions (Part A)",
+        "average_duration_PART_A": "Average duration (Part A)",
+        "non_cut_rt_PART_B": "Complete reaction time (Part B)",
+        "age": "Age",
+        "search_time_PART_A": "Search time (Part A)",
+        "max_duration_PART_B": "Hesitation max duration (Part B)",
+        "state_transitions_B_A_ratio": "State transitions (B/A ratio)",
+        "average_duration_PART_B": "Average duration (Part B)",
+        "non_cut_correct_targets_touches_PART_A": "Complete correct touches (Part A)",
+        "travel_avg_speed_B_A_ratio": "Average speed (B/A ratio)",
+        "hesitation_time_PART_A": "Hesitation time (Part A)",
+        "travel_distance_PART_B": "Travel distance (Part B)",
+    }
+    df_plot.index = df_plot.index.map(feature_labels)
     bars = ax1.barh(df_plot.index, df_plot["mean_abs_shap"], alpha=0.7)
     ax1.set_xlabel("Mean |SHAP| (across selected folds)")
     ax1.tick_params(axis="x")
@@ -213,6 +240,6 @@ def main(is_classification, timestamp):
 
 
 if __name__ == "__main__":
-    is_classification = False
+    is_classification = True
     timestamp = "2025-09-14_0038" if is_classification else "2025-09-14_1008"
     main(is_classification, timestamp)
