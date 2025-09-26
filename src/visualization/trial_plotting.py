@@ -10,11 +10,12 @@ def plot_with_color(trial: TMTTrial, target_radius: float, color_by=None, show_s
     target_y = [target.position.y for target in trial.stimuli]
     target_contents = [target.content for target in trial.stimuli]
 
-    cursor_trail_from_first_click = trial.cursor_trail  # .get_cursor_trail_from_start()
+    cursol_trail = trial.cursor_trail  # .get_cursor_trail_from_start()
+
     # Extraer la trayectoria del cursor
-    cursor_x = [cursor_info.position.x for cursor_info in cursor_trail_from_first_click]
-    cursor_y = [cursor_info.position.y for cursor_info in cursor_trail_from_first_click]
-    cursor_times = [cursor_info.time for cursor_info in cursor_trail_from_first_click]
+    cursor_x = [cursor_info.position.x for cursor_info in cursol_trail]
+    cursor_y = [cursor_info.position.y for cursor_info in cursol_trail]
+    cursor_times = [cursor_info.time for cursor_info in cursol_trail]
 
     if color_by is not None:
         colors, norm = get_cursor_colors(cmap_name, color_by, cursor_times, trial)
