@@ -1,3 +1,4 @@
+import numpy as np
 from matplotlib import pyplot as plt
 from neurotask.tmt.metrics.speed_metrics import calculate_accelerations_between_cursor_positions
 from neurotask.tmt.metrics.speed_metrics import calculate_speeds_between_cursor_positions
@@ -10,7 +11,7 @@ def plot_with_color(trial: TMTTrial, target_radius: float, color_by=None, show_s
     target_y = [target.position.y for target in trial.stimuli]
     target_contents = [target.content for target in trial.stimuli]
 
-    cursol_trail = trial.cursor_trail  # .get_cursor_trail_from_start()
+    cursol_trail = trial.get_cursor_trail_from_start()
 
     # Extraer la trayectoria del cursor
     cursor_x = [cursor_info.position.x for cursor_info in cursol_trail]
@@ -50,7 +51,7 @@ def plot_with_color(trial: TMTTrial, target_radius: float, color_by=None, show_s
     for x, y, content in zip(target_x, target_y, target_contents):
         circle = plt.Circle((x, y), target_radius, color='steelblue', alpha=0.3, zorder=5)
         ax.add_patch(circle)
-        plt.text(x, y, content, color='black', fontsize=8, ha='center', va='center', zorder=6)
+        plt.text(x, y, content, color='black', fontsize=10, ha='center', va='center', zorder=6)
 
     # Labels y formato
     ax.set_xlabel('X screen coordinate (pixels)')
@@ -71,7 +72,7 @@ def plot_trial_start(ax, trial):
     fc_x = trial.start.position.x
     fc_y = trial.start.position.y
     plt.scatter(fc_x, fc_y, color='cyan', edgecolor='black', s=100,
-                label='Trial start', zorder=7, marker='o', alpha=0.3)
+                label='Trial start', zorder=7, marker='o', alpha=0.4)
     # Add legend
     ax.legend()
 
@@ -79,7 +80,15 @@ def plot_trial_start(ax, trial):
 def get_cursor_colors(cmap_name, color_by, cursor_times, trial):
     if color_by == 'time':
         norm = plt.Normalize(min(cursor_times), max(cursor_times))
-        colors = plt.get_cmap(cmap_name)(norm(cursor_times))
+
+        # recortamos el colormap: de 0.3 a 1 (evita los tonos muy claros)
+        base_cmap = plt.get_cmap(cmap_name)
+        truncated_cmap = plt.cm.colors.LinearSegmentedColormap.from_list(
+            f"{cmap_name}_trunc",
+            base_cmap(np.linspace(0.3, 1.0, 256))
+        )
+
+        colors = truncated_cmap(norm(cursor_times))
     elif color_by == 'speed':
         speeds = calculate_speeds_between_cursor_positions(trial)
         speeds = [0] + speeds  # Para igualar el número de puntos con las velocidades calculadas
