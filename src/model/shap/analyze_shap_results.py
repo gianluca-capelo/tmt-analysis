@@ -199,9 +199,9 @@ def plot_shap_summary(df, is_classification, target_col, top_n=20, plot_freq=Fal
         "non_cut_correct_targets_touches_PART_B": "Complete correct touches (Part B)",
         "non_cut_correct_targets_touches_B_A_ratio": "Complete correct touches (B/A ratio)",
 
-        "non_cut_rt_PART_A": "Complete time to complete trial (Part A)",
-        "non_cut_rt_PART_B": "Complete time to complete trial (Part B)",
-        "non_cut_rt_B_A_ratio": "Complete time to complete trial (B/A ratio)",
+        "non_cut_rt_PART_A": "Complete time in trial (Part A)",
+        "non_cut_rt_PART_B": "Complete time in trial (Part B)",
+        "non_cut_rt_B_A_ratio": "Complete time in trial (B/A ratio)",
 
         "peak_abs_acceleration_PART_A": "Peak absolute acceleration (Part A)",
         "peak_abs_acceleration_PART_B": "Peak absolute acceleration (Part B)",
@@ -219,9 +219,9 @@ def plot_shap_summary(df, is_classification, target_col, top_n=20, plot_freq=Fal
         "peak_speed_PART_B": "Peak speed (Part B)",
         "peak_speed_B_A_ratio": "Peak speed (B/A ratio)",
 
-        "rt_PART_A": "Time to complete trial (Part A)",
-        "rt_PART_B": "Time to complete trial (Part B)",
-        "rt_B_A_ratio": "Time to complete trial (B/A ratio)",
+        "rt_PART_A": "Time in trial (Part A)",
+        "rt_PART_B": "Time in trial (Part B)",
+        "rt_B_A_ratio": "Time in trial (B/A ratio)",
 
         "search_avg_speed_PART_A": "Search average speed (Part A)",
         "search_avg_speed_PART_B": "Search average speed (Part B)",
