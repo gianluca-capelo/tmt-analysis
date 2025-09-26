@@ -83,12 +83,12 @@ def get_cursor_colors(cmap_name, color_by, cursor_times, trial):
         speeds = calculate_speeds_between_cursor_positions(trial)
         speeds = [0] + speeds  # Para igualar el número de puntos con las velocidades calculadas
         norm = plt.Normalize(min(speeds), max(speeds))
-        colors = plt.cm.viridis(norm(speeds))  # Usar un mapa de colores para la velocidad
+        colors = plt.get_cmap(cmap_name)(norm(speeds))  # Usar un mapa de colores para la velocidad
     elif color_by == 'acceleration':
         accelerations = calculate_accelerations_between_cursor_positions(trial)
         accelerations = [0, 0] + accelerations  # Igualar el número de puntos (2 primeros puntos sin aceleración)
         norm = plt.Normalize(min(accelerations), max(accelerations))
-        colors = plt.cm.viridis(norm(accelerations))
+        colors = plt.get_cmap(cmap_name)(norm(accelerations))
     else:
         raise ValueError("El parámetro color_by debe ser 'time', 'speed', 'acceleration'")
     return colors, norm
