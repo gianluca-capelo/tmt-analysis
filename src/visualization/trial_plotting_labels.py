@@ -3,7 +3,7 @@ from neurotask.tmt.model.tmt_model import TMTTrial
 
 
 def plot_with_labels_scatter(trial: TMTTrial, target_radius: float, labels: list[str], labels_title="Labels",
-                             title="TMT Trial Trajectory"):
+                             title="TMT Trial Trajectory", cmap_name='tab10'):
     """
     Dibuja la trayectoria del cursor de un trial del TMT, coloreando cada punto
     según una etiqueta categórica (ej: "TRAVEL", "SEARCH", etc.) usando scatter.
@@ -26,7 +26,7 @@ def plot_with_labels_scatter(trial: TMTTrial, target_radius: float, labels: list
 
     # Asignar colores únicos a cada etiqueta
     unique_labels = sorted(set(labels))
-    cmap = plt.get_cmap('tab10') if len(unique_labels) <= 10 else plt.get_cmap('tab20')
+    cmap = plt.get_cmap(cmap_name) if len(unique_labels) <= 10 else plt.get_cmap('tab20')
     label_to_color = {label: cmap(i % cmap.N) for i, label in enumerate(unique_labels)}
     point_colors = [label_to_color[label] for label in labels]
 
@@ -38,7 +38,7 @@ def plot_with_labels_scatter(trial: TMTTrial, target_radius: float, labels: list
 
     # Dibujar los targets
     for target in trial.stimuli:
-        circle = plt.Circle((target.position.x, target.position.y), target_radius, color='red', alpha=0.3, zorder=5)
+        circle = plt.Circle((target.position.x, target.position.y), target_radius, color='steelblue', alpha=0.3, zorder=5)
         ax.add_patch(circle)
         ax.text(target.position.x, target.position.y, target.content,
                 color='black', fontsize=8, ha='center', va='center', zorder=6)
@@ -62,7 +62,7 @@ def plot_with_labels_scatter(trial: TMTTrial, target_radius: float, labels: list
 
 
 def plot_with_labels(trial: TMTTrial, target_radius: float, labels: list[str], labels_title="Labels",
-                     title="TMT Trial Trajectory"):
+                     title="TMT Trial Trajectory", cmap_name='tab10'):
     """
     Dibuja la trayectoria del cursor de un trial del TMT, coloreando cada segmento
     según una etiqueta categórica (ej: "TRAVEL", "SEARCH", etc.).
@@ -90,7 +90,7 @@ def plot_with_labels(trial: TMTTrial, target_radius: float, labels: list[str], l
 
     # Generar colores para cada etiqueta única
     unique_labels = list(sorted(set(labels)))
-    cmap = plt.get_cmap('tab10') if len(unique_labels) <= 10 else plt.get_cmap('tab20')
+    cmap = plt.get_cmap(cmap_name) if len(unique_labels) <= 10 else plt.get_cmap('tab20')
     label_to_color = {label: cmap(i % cmap.N) for i, label in enumerate(unique_labels)}
 
     # Crear figura
@@ -106,7 +106,7 @@ def plot_with_labels(trial: TMTTrial, target_radius: float, labels: list[str], l
 
     # Dibujar targets
     for x, y, content in zip(target_x, target_y, target_contents):
-        circle = plt.Circle((x, y), target_radius, color='red', alpha=0.3, zorder=5)
+        circle = plt.Circle((x, y), target_radius, color='steelblue', alpha=0.3, zorder=5)
         ax.add_patch(circle)
         ax.text(x, y, content, color='black', fontsize=8, ha='center', va='center', zorder=6)
 
