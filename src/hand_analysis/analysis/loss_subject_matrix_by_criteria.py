@@ -18,7 +18,7 @@ def plot_loss_matrix(data, ax=None, title_suffix=''):
     for M in target_touches_range:
         counts = (
             data
-            .groupby('subject_id')['correct_targets_touches']
+            .groupby('subject_id')['non_cut_correct_targets_touches']
             .apply(lambda touches: (touches >= M).sum())
         )
         subject_counts[M] = counts
@@ -48,7 +48,7 @@ def plot_loss_matrix(data, ax=None, title_suffix=''):
 
 
 if __name__ == "__main__":
-    train_set, _ = load_analysis_by_date("2025-04-25_12-55-48")
+    train_set, _ = load_analysis_by_date("2025-08-14_18-57-05")
     fig, axes = plt.subplots(1, 2, figsize=(16, 7), sharey=True)
 
     plot_loss_matrix(
