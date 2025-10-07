@@ -13,10 +13,9 @@ def plot_segmentation(trial: TMTTrial, target_radius: float, speed_threshold: fl
                                                                                            speed_threshold)
     segmentation_labels = [label for (label, color) in segmentation]
 
-    title = 'Segmentation'
     labels_title = 'Segmentation Labels'
-    plot_with_labels(trial, target_radius, segmentation_labels, labels_title=labels_title, title=title, cmap_name=cmap_name)
+    plot_with_labels(trial, target_radius, segmentation_labels, labels_title=labels_title, cmap_name=cmap_name)
 
-    plot_with_labels_scatter(trial, target_radius, segmentation_labels, labels_title=labels_title, title=title, cmap_name=cmap_name)
+    plot_with_labels_scatter(trial, target_radius, segmentation_labels, labels_title=labels_title, cmap_name=cmap_name)
 
     plt.show()
