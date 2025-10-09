@@ -74,9 +74,9 @@ def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = N
     # ───────────────────────────────────────────────────────────────
     group_map = {
         'Non-digital': 'non_digital',
-        'Non-digital + Demographic': 'non_digital',
+        'Non-digital + Demographic': 'demographic+non_digital',
         'Demographic': 'demographic',
-        'Demographic + Digital': 'digital',
+        'Demographic + Digital': 'demographic+digital',
         'Digital': 'digital'
     }
 
@@ -84,13 +84,17 @@ def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = N
     group_colors = {
         'non_digital': '#1f77b4',  # blue
         'demographic': '#2ca02c',  # green
-        'digital': '#d62728'  # red
+        'digital': '#d62728',  # red
+        'demographic+non_digital': '#1f77b4', # blue
+        'demographic+digital': '#d62728', # red
     }
 
     group_linestyles = {
         'non_digital': 'solid',
         'demographic': 'solid',
-        'digital': 'solid'
+        'digital': 'solid',
+        'demographic+non_digital': 'dashed',
+        'demographic+digital': 'dashed',
     }
 
     # ───────────────────────────────────────────────────────────────
@@ -136,7 +140,7 @@ def plot_top_n_datasets_roc(date_folder: str, top_n: int = 5, save_path: str = N
     plt.ylabel("True Positive Rate", fontsize=14)
     plt.xticks(fontsize=12)
     plt.yticks(fontsize=12)
-    plt.legend(loc='lower right', fontsize=11, frameon=False)
+    plt.legend(loc='lower right', fontsize=15, frameon=False)
     plt.grid(alpha=0.3)
     plt.tight_layout()
     plt.savefig(save_path)
