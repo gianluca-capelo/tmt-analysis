@@ -453,7 +453,7 @@ def parse_args():
     else:
         if args.target_col is None:
             target_cols = REGRESSION_TARGETS
-        else:
+        else:   
             target_cols = [args.target_col]
 
     return is_classification, target_cols

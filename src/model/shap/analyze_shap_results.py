@@ -275,7 +275,18 @@ def plot_shap_summary(df, is_classification, target_col, top_n=20, plot_freq=Fal
         "travel_time_PART_B": "Travel time (Part B)",
         "travel_time_B_A_ratio": "Travel time (B/A ratio)",
 
-        "age": "Age"
+        "zigzag_amplitude_PART_A": "Zigzag amplitude (Part A)",
+        "zigzag_amplitude_PART_B": "Zigzag amplitude (Part B)",
+        "zigzag_amplitude_B_A_ratio": "Zigzag amplitude (B/A ratio)",
+        
+        "non_cut_zigzag_amplitude_PART_A": "Complete zigzag amplitude (Part A)",
+        "non_cut_zigzag_amplitude_PART_B": "Complete zigzag amplitude (Part B)",
+        "non_cut_zigzag_amplitude_B_A_ratio": "Complete zigzag amplitude (B/A ratio)",
+
+        "age": "Age",
+        "years_of_education": "Years of Education",
+        "sex": "Sex",
+
     }
 
     df_plot.index = df_plot.index.map(feature_labels)
@@ -340,6 +351,15 @@ def run_analysis(dataset_name, is_classification, model, timestamp, save_filenam
 
 
 def main(is_classification, timestamp):
+
+    best_algo_reg_dig_plus_demo = {
+        'mmse': 'RandomForestRegressor',
+        'digit_symbol_raw': 'Lasso',
+        'tmt_a_raw': 'ElasticNet',
+        'tmt_b_raw': 'SVR',
+        'forward_digit_span_raw': 'ElasticNet',
+    }
+
     if is_classification:
         target_col = "group"  # Binary classification
         model = "SVC"
@@ -347,15 +367,15 @@ def main(is_classification, timestamp):
         save_filename = "shap_summary_classification.png"
         dataset_name = "demographic+digital"
     else:
-        target_col = "mmse"
-        model = "RandomForestRegressor"
+        target_col = "forward_digit_span_raw"
+        model = best_algo_reg_dig_plus_demo[target_col]
         timestamp = timestamp
-        save_filename = "shap_summary_regression.png"
+        save_filename = f"shap_regression_{target_col}_{model}.png"
         dataset_name = "demographic+digital"
     run_analysis(dataset_name, is_classification, model, timestamp, save_filename, target_col)
 
 
 if __name__ == "__main__":
-    is_classification = True
-    timestamp = "2025-09-14_0038 (clasificacion completo)" if is_classification else "2025-09-14_1008"
+    is_classification = False
+    timestamp = "2025-09-14_0038 (clasificacion completo)" if is_classification else "2025-09-13_1725"
     main(is_classification, timestamp)
